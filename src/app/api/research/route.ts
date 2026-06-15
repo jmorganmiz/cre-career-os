@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { careerProfilePrompt } from "@/lib/career-profile";
 
 const fallback = (firm: string) => ({
   firm_summary: `${firm} is a target firm in your CRE career pipeline. Add an OpenAI API key to enable live web research and cited findings.`,
@@ -16,7 +17,9 @@ export async function POST(request: Request) {
   const firm = String(input.firm_name || "This firm");
   if (!process.env.OPENAI_API_KEY) return NextResponse.json(fallback(firm));
 
-  const prompt = `Research ${firm} for a post-grad commercial real estate job seeker.
+  const prompt = `Research ${firm} for Jack Morgan's post-grad commercial real estate job search.
+${careerProfilePrompt()}
+
 Website context: ${input.website_text || "none"}
 Contact bio: ${input.contact_bio || "none"}
 Job description: ${input.job_description || "none"}

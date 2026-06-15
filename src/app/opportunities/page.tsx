@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowUpRight, BriefcaseBusiness, Check, ExternalLink, LoaderCircle, Radar, Save, Search, Sparkles, Target } from "lucide-react";
 import { useCareerData } from "@/components/data-provider";
 import { Badge, PageHeader } from "@/components/ui";
+import { careerProfile, defaultOpportunityCriteria } from "@/lib/career-profile";
 
 type Opportunity = {
   firm_name: string;
@@ -27,18 +28,9 @@ type OpportunityBrief = {
   demo?: boolean;
 };
 
-const initialForm = {
-  target_roles: "Acquisitions analyst, asset management analyst, capital markets analyst, multifamily lending analyst, PropTech strategy associate, AI real estate analyst",
-  target_markets: "Dallas, Austin, Atlanta, Nashville, Charlotte, Chicago, New York, remote",
-  asset_classes: "Multifamily, commercial real estate, lending, PropTech, AI-enabled real estate platforms",
-  company_types: "Owners/operators, lenders, debt funds, brokerages, PropTech companies, real estate AI startups",
-  must_haves: "Entry-level or early-career friendly, strong training, analytical work, networking upside",
-  avoid: "Commission-only roles, vague internships, roles requiring 5+ years of experience",
-};
-
 export default function OpportunitiesPage() {
   const { add } = useCareerData();
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(defaultOpportunityCriteria);
   const [brief, setBrief] = useState<OpportunityBrief | null>(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState<string[]>([]);
@@ -69,12 +61,16 @@ export default function OpportunitiesPage() {
   };
 
   return <>
-    <PageHeader eyebrow="Agentic search" title="Opportunity finder" description="Tell the agent what you want, then review scored job opportunities before saving them to your tracker." />
+    <PageHeader eyebrow="Agentic search" title="Opportunity finder" description={`Personalized for ${careerProfile.name}'s AI-enabled multifamily investor path.`} />
     <div className="grid gap-6 xl:grid-cols-[.8fr_1.2fr]">
       <div className="card h-fit p-5">
         <div className="mb-5 flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#d9efe7] text-[#164c3a]"><Radar size={18}/></span>
           <div><div className="text-sm font-extrabold">Opportunity brief</div><div className="mt-0.5 text-xs text-[#7a8781]">Current web search, scored for your goals</div></div>
+        </div>
+        <div className="mb-5 rounded-2xl border border-[#e4e9e6] bg-[#f7f9f8] p-4">
+          <div className="text-xs font-extrabold text-[#164c3a]">North Star</div>
+          <p className="mt-2 text-xs leading-5 text-[#60706a]">{careerProfile.northStar}</p>
         </div>
         <div className="space-y-4">
           <label className="block text-xs font-extrabold">Target roles<textarea className="input mt-2 min-h-20 text-sm leading-6" value={form.target_roles} onChange={(e)=>field("target_roles",e.target.value)}/></label>

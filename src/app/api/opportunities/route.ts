@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { careerProfilePrompt } from "@/lib/career-profile";
 
 type OpportunityInput = {
   target_roles?: string;
@@ -55,9 +56,11 @@ export async function POST(request: Request) {
   const input = await request.json() as OpportunityInput;
   if (!process.env.OPENAI_API_KEY) return NextResponse.json(fallback(input));
 
-  const prompt = `You are an opportunity finder for a post-grad commercial real estate job search.
+  const prompt = `You are an opportunity finder for Jack Morgan's post-grad commercial real estate job search.
 
 Find current, relevant job opportunities using web search. Focus on commercial real estate, multifamily, lending, PropTech, and AI/data-related real estate roles.
+
+${careerProfilePrompt()}
 
 User criteria:
 - Target roles: ${input.target_roles || "CRE analyst, acquisitions analyst, asset management analyst, capital markets analyst, PropTech strategy, AI real estate"}

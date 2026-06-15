@@ -1,10 +1,10 @@
 export const firms = [
-  { name: "Greystar", location: "Charleston, SC", category: "Multifamily", priority: "Tier 1", contacts: 3, stage: "Networking", note: "Global platform with deep operating exposure" },
-  { name: "Walker & Dunlop", location: "Bethesda, MD", category: "Lending", priority: "Tier 1", contacts: 2, stage: "Active role", note: "Tech-forward capital markets platform" },
-  { name: "VTS", location: "New York, NY", category: "PropTech", priority: "Tier 1", contacts: 0, stage: "Researching", note: "Data and workflow infrastructure for CRE" },
-  { name: "JLL", location: "Chicago, IL", category: "Advisory", priority: "Tier 2", contacts: 4, stage: "Networking", note: "Broad exposure across capital markets" },
-  { name: "Juniper Square", location: "San Francisco, CA", category: "PropTech", priority: "Tier 2", contacts: 0, stage: "Researching", note: "Modernizes private markets operations" },
-  { name: "Arbor Realty Trust", location: "Uniondale, NY", category: "Lending", priority: "Tier 2", contacts: 1, stage: "Applied", note: "Multifamily lending specialization" },
+  { name: "Greystar", location: "Charleston, SC", category: "Multifamily Owner-Operator", priority: "Tier 1", contacts: 3, stage: "Networking", note: "Elite multifamily platform with operating and investment exposure" },
+  { name: "Yardi", location: "Santa Barbara, CA", category: "PropTech", priority: "Tier 1", contacts: 2, stage: "Internship", note: "Summer 2026 internship and real estate software network" },
+  { name: "Walker & Dunlop", location: "Dallas, TX", category: "Lending", priority: "Tier 1", contacts: 2, stage: "Researching", note: "Multifamily lending and capital markets fit" },
+  { name: "Peak Development Partners", location: "Charlotte, NC", category: "Development", priority: "Tier 2", contacts: 1, stage: "Past experience", note: "Development exposure and operator-focused learning" },
+  { name: "Secure Net Lease", location: "Dallas, TX", category: "Capital Markets", priority: "Tier 2", contacts: 1, stage: "Past experience", note: "Brokerage and capital markets foundation" },
+  { name: "VTS", location: "New York, NY", category: "PropTech", priority: "Tier 2", contacts: 0, stage: "Researching", note: "CRE workflow data and software strategy" },
 ];
 
 export const contacts = [
@@ -16,9 +16,9 @@ export const contacts = [
 ];
 
 export const applications = [
-  { role: "Analyst, Multifamily Investments", firm: "Greystar", location: "Atlanta, GA", status: "Interviewing", stage: "First round", applied: "Jun 4", followUp: "Jun 17" },
-  { role: "Capital Markets Analyst", firm: "Walker & Dunlop", location: "Bethesda, MD", status: "Applied", stage: "Application review", applied: "Jun 8", followUp: "Jun 18" },
-  { role: "Strategy & Operations Associate", firm: "VTS", location: "New York, NY", status: "Saved", stage: "Preparing", applied: "—", followUp: "Jun 16" },
-  { role: "Analyst, Debt Advisory", firm: "JLL", location: "Chicago, IL", status: "Networking", stage: "Seeking referral", applied: "—", followUp: "Jun 19" },
-  { role: "AI Solutions Analyst", firm: "Juniper Square", location: "Remote", status: "Applied", stage: "Application review", applied: "Jun 12", followUp: "Jun 24" },
+  { role: "Multifamily Acquisitions Analyst", firm: "Greystar", location: "Charleston, SC", status: "Networking", stage: "Seeking analyst/associate conversations", applied: "-", followUp: "Jun 17" },
+  { role: "Agency Lending Analyst", firm: "Walker & Dunlop", location: "Dallas, TX", status: "Saved", stage: "Researching team", applied: "-", followUp: "Jun 18" },
+  { role: "PropTech Strategy Analyst", firm: "Yardi", location: "San Diego, CA", status: "Networking", stage: "Internship leverage", applied: "-", followUp: "Jun 20" },
+  { role: "Development Analyst", firm: "Peak Development Partners", location: "Charlotte, NC", status: "Networking", stage: "Relationship follow-up", applied: "-", followUp: "Jun 19" },
+  { role: "Competitive Intelligence Analyst", firm: "VTS", location: "New York, NY", status: "Saved", stage: "Exceptional NYC opportunity only", applied: "-", followUp: "Jun 24" },
 ];

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Badge, EmptyPrompt } from "@/components/ui";
 import { useCareerData } from "@/components/data-provider";
+import { careerProfile } from "@/lib/career-profile";
 
 const initialTasks = [
   { id: 1, title: "Follow up with Maya Reynolds", meta: "Greystar | due today", kind: "Follow-up", done: false },
@@ -44,8 +45,8 @@ export default function Dashboard() {
           <div className="mb-3 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[.16em] text-[#c9e7db]">
             <Flame size={14} className="text-[#d6f276]" /> Monday, June 15 | Week 4 | {live ? "Live data" : "Demo mode"}
           </div>
-          <h1 className="text-3xl font-extrabold tracking-[-.045em] md:text-[40px]">Build momentum where it matters.</h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-[#c5d8d0]">Your interview pipeline is moving. Focus today on the Greystar conversation and creating one new relationship at VTS.</p>
+          <h1 className="text-3xl font-extrabold tracking-[-.045em] md:text-[40px]">Build Jack&apos;s information advantage.</h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-[#c5d8d0]">{careerProfile.northStar}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button className="inline-flex items-center gap-2 rounded-xl bg-[#d6f276] px-4 py-2.5 text-sm font-extrabold text-[#173d30] hover:bg-white">
               <Target size={16} /> Start today&apos;s focus
@@ -102,7 +103,7 @@ export default function Dashboard() {
         </div>
         <div className="insight-card rounded-[18px] p-5">
           <div className="flex items-center gap-2 text-sm font-extrabold"><Lightbulb size={16} /> This week&apos;s insight</div>
-          <p className="mt-3 text-sm leading-6 text-[#52645d]">Your warm introductions are getting 2.4x more replies. Prioritize referral paths before submitting your next three applications.</p>
+          <p className="mt-3 text-sm leading-6 text-[#52645d]">Prioritize roles with analytical responsibility, deal exposure, mentorship, and a clear path toward multifamily investing or capital allocation.</p>
           <Link href="/contacts" className="mt-4 inline-flex items-center gap-1 text-xs font-extrabold text-[#164c3a]">Find referral paths <ArrowRight size={13}/></Link>
         </div>
         <div className="card p-5"><div className="mb-4 text-sm font-extrabold">Priority firms with no contacts</div><div className="space-y-3">{firms.filter(f => !contacts.some(c=>c.firm_id===f.id)).slice(0,3).map(f => <EmptyPrompt key={f.id ?? f.name} title={f.name} text={`${f.category || "Uncategorized"} | ${[f.city,f.state].filter(Boolean).join(", ") || "Location TBD"}`} />)}</div></div>
