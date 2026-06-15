@@ -32,6 +32,10 @@ OPENAI_MODEL=gpt-5.4-mini
 
 The agent researches and drafts only. It does not send messages or change records without user action.
 
+## Opportunity finder agent
+
+The Opportunities page lets you describe target roles, markets, asset classes, company types, must-haves, and deal-breakers. With `OPENAI_API_KEY` configured, the server-side agent uses web search to return scored roles with source links, next steps, talking points, and risks. You can save a role to Applications after reviewing it.
+
 ## CSV import
 
 Use **Import CSV** on the Firms, Contacts, or Applications page. The first row should contain database field names. Contacts and applications can link to an existing firm using its Supabase `firm_id`.

@@ -62,3 +62,14 @@ create table if not exists research_runs (
 alter table research_runs enable row level security;
 create policy "Users manage own research" on research_runs for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table if not exists opportunity_runs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  input jsonb not null default '{}'::jsonb,
+  output jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+alter table opportunity_runs enable row level security;
+create policy "Users manage own opportunity runs" on opportunity_runs for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
