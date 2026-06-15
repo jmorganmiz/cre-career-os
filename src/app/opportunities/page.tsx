@@ -26,6 +26,7 @@ type OpportunityBrief = {
   opportunities: Opportunity[];
   searches_to_run_next: string[];
   demo?: boolean;
+  agent_error?: string;
 };
 
 export default function OpportunitiesPage() {
@@ -44,7 +45,8 @@ export default function OpportunitiesPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-    setBrief(await response.json());
+    const data = await response.json();
+    setBrief(data);
     setLoading(false);
   };
 
@@ -95,10 +97,13 @@ export default function OpportunitiesPage() {
             <div className="mb-2 flex items-center gap-2 text-sm font-extrabold"><Sparkles size={16} className="text-[#164c3a]"/> Search summary</div>
             <p className="text-sm leading-6 text-[#5f6d67]">{brief.search_summary}</p>
             <div className="mt-3 text-xs font-bold text-[#7a8781]">{brief.demo ? "Demo results | add OPENAI_API_KEY on Vercel for live search" : "Live opportunity search"}</div>
+            {brief.agent_error && <div className="mt-4 rounded-xl border border-[#f1d4a8] bg-[#fff8ed] p-3 text-xs leading-5 text-[#8a6120]">
+              Live OpenAI search failed. Check API billing, usage limits, or model access in the OpenAI dashboard, then try again. Fallback results are shown below.
+            </div>}
           </div>
 
           <div className="grid gap-4">
-            {brief.opportunities?.map((opportunity) => {
+            {brief.opportunities?.length ? brief.opportunities.map((opportunity) => {
               const key = `${opportunity.firm_name}-${opportunity.role_title}`;
               const isSaved = saved.includes(key);
               return <div key={key} className="card p-5">
@@ -119,7 +124,7 @@ export default function OpportunitiesPage() {
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">{opportunity.talking_points?.map((point)=><span key={point} className="rounded-full bg-[#eef4f1] px-3 py-1 text-[11px] font-bold text-[#557166]">{point}</span>)}</div>
               </div>;
-            })}
+            }) : <div className="card p-6 text-center"><div className="text-sm font-extrabold">No opportunities returned</div><p className="mt-2 text-xs leading-5 text-[#7a8781]">The agent response did not include opportunity cards. Try a narrower search or check the API status.</p></div>}
           </div>
 
           <div className="card p-5">

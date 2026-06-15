@@ -12,6 +12,15 @@ const fallback = (firm: string) => ({
   demo: true,
 });
 
+function fallbackWithAgentError(firm: string, status: number, detail: string) {
+  return {
+    ...fallback(firm),
+    firm_summary: `The research agent could not complete live OpenAI research, so this is a fallback brief for ${firm}. OpenAI returned status ${status}.`,
+    agent_error: detail,
+    demo: false,
+  };
+}
+
 export async function POST(request: Request) {
   const input = await request.json();
   const firm = String(input.firm_name || "This firm");
@@ -28,9 +37,9 @@ Return only valid JSON with keys firm_summary, fit, questions (array), linkedin_
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({ model: process.env.OPENAI_MODEL || "gpt-5.4-mini", tools: [{ type: "web_search" }], input: prompt }),
+    body: JSON.stringify({ model: process.env.OPENAI_MODEL || "gpt-5.4-mini", tools: [{ type: "web_search", search_context_size: "low" }], input: prompt }),
   });
-  if (!response.ok) return NextResponse.json({ error: await response.text() }, { status: response.status });
+  if (!response.ok) return NextResponse.json(fallbackWithAgentError(firm, response.status, await response.text()));
   const data = await response.json();
   const text = data.output_text || data.output?.flatMap((x: { content?: { text?: string }[] }) => x.content || []).map((x: { text?: string }) => x.text || "").join("");
   try { return NextResponse.json(JSON.parse(text.replace(/^```json|```$/g, "").trim())); }

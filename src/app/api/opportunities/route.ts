@@ -52,6 +52,15 @@ const fallback = (input: OpportunityInput) => ({
   demo: true,
 });
 
+function fallbackWithAgentError(input: OpportunityInput, status: number, detail: string) {
+  return {
+    ...fallback(input),
+    search_summary: `The opportunity agent could not complete live OpenAI research, so these are fallback opportunities. OpenAI returned status ${status}.`,
+    agent_error: detail,
+    demo: false,
+  };
+}
+
 export async function POST(request: Request) {
   const input = await request.json() as OpportunityInput;
   if (!process.env.OPENAI_API_KEY) return NextResponse.json(fallback(input));
@@ -87,12 +96,15 @@ Rules:
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || "gpt-5.4-mini",
-      tools: [{ type: "web_search" }],
+      tools: [{ type: "web_search", search_context_size: "low" }],
       input: prompt,
     }),
   });
 
-  if (!response.ok) return NextResponse.json({ error: await response.text() }, { status: response.status });
+  if (!response.ok) {
+    const detail = await response.text();
+    return NextResponse.json(fallbackWithAgentError(input, response.status, detail));
+  }
   const data = await response.json();
   const text = data.output_text || data.output?.flatMap((x: { content?: { text?: string }[] }) => x.content || []).map((x: { text?: string }) => x.text || "").join("");
 
