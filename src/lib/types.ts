@@ -12,6 +12,7 @@ export type Application = {
   id?: string; firm_id?: string; role_title: string; city?: string; job_url?: string; status?: string;
   date_applied?: string; referral_contact_id?: string; interview_stage?: string; follow_up_at?: string; notes?: string;
 };
+
 export type OpportunityRun = {
   id?: string;
   input: Record<string, string>;
@@ -24,4 +25,35 @@ export type OpportunityRun = {
     agent_error?: string;
   };
   created_at?: string;
+};
+
+export type ResearchRun = {
+  id?: string;
+  firm_id?: string;
+  input: Record<string, string>;
+  output: {
+    firm_summary?: string;
+    fit?: string;
+    questions?: string[];
+    linkedin_message?: string;
+    talking_points?: string[];
+    red_flags?: string[];
+    sources?: { title: string; url: string }[];
+    demo?: boolean;
+    agent_error?: string;
+  };
+  created_at?: string;
+};
+
+export type ActivityLog = {
+  id?: string;
+  action_id: string;
+  action_type?: string;
+  title?: string;
+  completed_at?: string;
+};
+
+export type Notice = {
+  tone: "success" | "error";
+  message: string;
 };

@@ -36,9 +36,9 @@ function isDue(date?: string) {
 }
 
 export default function Dashboard() {
-  const { firms, contacts, applications, live } = useCareerData();
+  const { firms, contacts, applications, activityLog, completeAction, live } = useCareerData();
   const [filter, setFilter] = useState("All actions");
-  const [done, setDone] = useState<string[]>([]);
+  const done = activityLog.map((item) => item.action_id);
 
   const actions = useMemo<ActionItem[]>(() => {
     const contactFollowUps = contacts.filter((contact) => isDue(contact.follow_up_at)).map((contact) => {
@@ -99,7 +99,7 @@ export default function Dashboard() {
     return openActions;
   }, [actions, done, filter]);
 
-  const toggleAction = (id: string) => setDone((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  const toggleAction = (action: ActionItem) => completeAction({ action_id: action.id, action_type: action.kind, title: action.title });
 
   return <>
     <section className="hero-panel mb-6 overflow-hidden rounded-[24px] p-6 text-white md:p-8">
@@ -147,7 +147,7 @@ export default function Dashboard() {
         </div>
         <div className="divide-y divide-[#edf0ee]">
           {visibleActions.map((action, i) => <div key={action.id} className="group flex items-center gap-3 px-5 py-4 transition hover:bg-[#fafbfa]">
-            <button onClick={() => toggleAction(action.id)} aria-label={`Mark ${action.title} complete`} className="grid h-6 w-6 flex-none place-items-center rounded-full border border-[#c4d0cb] text-transparent transition hover:border-[#164c3a] hover:text-[#164c3a]"><Check size={13} strokeWidth={3} /></button>
+            <button onClick={() => toggleAction(action)} aria-label={`Mark ${action.title} complete`} className="grid h-6 w-6 flex-none place-items-center rounded-full border border-[#c4d0cb] text-transparent transition hover:border-[#164c3a] hover:text-[#164c3a]"><Check size={13} strokeWidth={3} /></button>
             <Link href={action.href} className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{action.title}</div><div className="mt-1 flex items-center gap-1.5 text-xs text-[#7b8882]"><Clock3 size={12} />{action.meta}</div></Link>
             <Badge tone={i === 0 ? "amber" : i === 1 ? "blue" : "gray"}>{action.kind}</Badge><ChevronRight size={15} className="text-[#abb4b0]" />
           </div>)}

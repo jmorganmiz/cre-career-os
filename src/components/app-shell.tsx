@@ -21,7 +21,7 @@ const nav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, live, signIn, signOut } = useCareerData();
+  const { user, live, notice, clearNotice, signIn, signOut } = useCareerData();
   const [accountOpen, setAccountOpen] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
   return (
@@ -71,7 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </header>
-        <div className="mx-auto max-w-[1480px] p-5 md:p-8">{children}</div>
+        <div className="mx-auto max-w-[1480px] p-5 md:p-8">{notice&&<button onClick={clearNotice} className={`mb-5 w-full rounded-xl border px-4 py-3 text-left text-xs font-bold ${notice.tone==="error"?"border-[#f1d4a8] bg-[#fff8ed] text-[#8a6120]":"border-[#cfe6db] bg-[#eef8f3] text-[#164c3a]"}`}>{notice.message}</button>}{children}</div>
       </main>
       {accountOpen&&<RecordModal title="Account & data sync" onClose={()=>setAccountOpen(false)}>{user?<div><div className="rounded-xl bg-[#eef5f2] p-4"><div className="text-xs font-bold text-[#718079]">Signed in as</div><div className="mt-1 text-sm font-extrabold">{user.email}</div><div className="mt-2 text-xs text-[#557166]">Your records are syncing with Supabase.</div></div><button onClick={signOut} className="btn-secondary mt-4 w-full">Sign out</button></div>:<form action={async(form)=>setAuthMessage(await signIn(String(form.get("email"))))}><p className="mb-4 text-sm leading-6 text-[#65736d]">Sign in with a secure email link to save and sync your career data. Without Supabase credentials, the app stays in demo mode.</p><label className="block text-xs font-extrabold">Email<input name="email" type="email" required className="input mt-2 text-sm" placeholder="you@email.com"/></label><button className="btn-primary mt-4 w-full">Send magic link</button>{authMessage&&<div className="mt-3 rounded-lg bg-[#f2f5f3] p-3 text-xs font-bold text-[#557166]">{authMessage}</div>}</form>}</RecordModal>}
     </div>

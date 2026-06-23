@@ -73,3 +73,39 @@ create table if not exists opportunity_runs (
 alter table opportunity_runs enable row level security;
 create policy "Users manage own opportunity runs" on opportunity_runs for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table if not exists activity_log (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  action_id text not null,
+  action_type text,
+  title text,
+  completed_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique(user_id, action_id)
+);
+alter table activity_log enable row level security;
+create policy "Users manage own activity log" on activity_log for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create index if not exists activity_log_action_id_idx on activity_log(action_id);
+create index if not exists activity_log_completed_at_idx on activity_log(completed_at);
+
+create or replace function set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists set_firms_updated_at on firms;
+create trigger set_firms_updated_at before update on firms
+  for each row execute function set_updated_at();
+
+drop trigger if exists set_contacts_updated_at on contacts;
+create trigger set_contacts_updated_at before update on contacts
+  for each row execute function set_updated_at();
+
+drop trigger if exists set_applications_updated_at on applications;
+create trigger set_applications_updated_at before update on applications
+  for each row execute function set_updated_at();
