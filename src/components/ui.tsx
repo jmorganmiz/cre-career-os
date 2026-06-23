@@ -12,10 +12,21 @@ export function Badge({ children, tone = "green" }: { children: React.ReactNode;
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-extrabold ${tones[tone]}`}>{children}</span>;
 }
 
-export function TableToolbar({ placeholder }: { placeholder: string }) {
+type TableToolbarProps = {
+  placeholder: string;
+  query?: string;
+  onQueryChange?: (value: string) => void;
+  filters?: { label: string; active: boolean; onClick: () => void; count?: number }[];
+};
+
+export function TableToolbar({ placeholder, query = "", onQueryChange, filters = [] }: TableToolbarProps) {
   return <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e4e9e6] p-4">
-    <div className="relative min-w-[240px] flex-1 max-w-sm"><Search className="absolute left-3 top-2.5 text-[#89948f]" size={16} /><input className="input !py-2 !pl-9 text-sm" placeholder={placeholder} /></div>
-    <button className="btn-secondary text-sm"><Filter size={15} />Filters</button>
+    <div className="relative min-w-[240px] max-w-sm flex-1"><Search className="absolute left-3 top-2.5 text-[#89948f]" size={16} /><input className="input !py-2 !pl-9 text-sm" placeholder={placeholder} value={query} onChange={(event) => onQueryChange?.(event.target.value)} /></div>
+    {filters.length ? <div className="flex flex-wrap gap-2">
+      {filters.map((filter) => <button key={filter.label} onClick={filter.onClick} className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-extrabold ${filter.active ? "bg-[#164c3a] text-white" : "border border-[#e1e7e4] bg-white text-[#66736d]"}`}>
+        {filter.label}{typeof filter.count === "number" && <span className={filter.active ? "text-white/80" : "text-[#8b9792]"}>{filter.count}</span>}
+      </button>)}
+    </div> : <button className="btn-secondary text-sm"><Filter size={15} />Filters</button>}
   </div>;
 }
 
