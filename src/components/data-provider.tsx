@@ -10,6 +10,7 @@ type RecordMap = { firms: Firm; contacts: Contact; applications: Application };
 type DataContextValue = {
   firms: Firm[]; contacts: Contact[]; applications: Application[]; opportunityRuns: OpportunityRun[]; user: User | null; live: boolean;
   add: <K extends Resource>(resource: K, value: RecordMap[K]) => Promise<RecordMap[K]>;
+  update: <K extends Resource>(resource: K, id: string, value: Partial<RecordMap[K]>) => Promise<RecordMap[K]>;
   remove: (resource: Resource, id?: string) => Promise<void>;
   importMany: <K extends Resource>(resource: K, items: RecordMap[K][]) => Promise<void>;
   addOpportunityRun: (input: OpportunityRun["input"], output: OpportunityRun["output"]) => Promise<OpportunityRun>;
@@ -77,6 +78,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if (resource === "applications") setApplications((x) => [item as Application, ...x]);
     return item as RecordMap[typeof resource];
   };
+  const update: DataContextValue["update"] = async (resource, id, value) => {
+    if (supabase && user) {
+      const { data, error } = await supabase.from(resource).update(value as RecordMap[typeof resource]).eq("id", id).select().single();
+      if (error) throw error;
+      if (resource === "firms") setFirms((x) => x.map((item) => item.id === id ? data as Firm : item));
+      if (resource === "contacts") setContacts((x) => x.map((item) => item.id === id ? data as Contact : item));
+      if (resource === "applications") setApplications((x) => x.map((item) => item.id === id ? data as Application : item));
+      return data as RecordMap[typeof resource];
+    }
+    const local = { ...value, id };
+    if (resource === "firms") setFirms((x) => x.map((item) => item.id === id ? { ...item, ...local } as Firm : item));
+    if (resource === "contacts") setContacts((x) => x.map((item) => item.id === id ? { ...item, ...local } as Contact : item));
+    if (resource === "applications") setApplications((x) => x.map((item) => item.id === id ? { ...item, ...local } as Application : item));
+    return local as RecordMap[typeof resource];
+  };
 
   const remove = async (resource: Resource, id?: string) => {
     if (!id) return;
@@ -124,7 +140,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
   const signOut = async () => { await supabase?.auth.signOut(); };
 
-  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, user, live: Boolean(supabase && user), add, remove, importMany, addOpportunityRun, signIn, signOut }}>{children}</DataContext.Provider>;
+  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, user, live: Boolean(supabase && user), add, update, remove, importMany, addOpportunityRun, signIn, signOut }}>{children}</DataContext.Provider>;
 }
 
 export const useCareerData = () => {

@@ -11,6 +11,7 @@ export function RecordModal({ title, children, onClose }: { title: string; child
   </div>;
 }
 
-export function FormField({ label, name, required, type = "text", placeholder }: { label: string; name: string; required?: boolean; type?: string; placeholder?: string }) {
-  return <label className="block text-xs font-extrabold">{label}<input className="input mt-2 text-sm" name={name} required={required} type={type} placeholder={placeholder}/></label>;
+export function FormField({ label, name, required, type = "text", placeholder, defaultValue }: { label: string; name: string; required?: boolean; type?: string; placeholder?: string; defaultValue?: string | number }) {
+  return <label className="block text-xs font-extrabold">{label}<input className="input mt-2 text-sm" name={name} required={required} type={type} placeholder={placeholder} defaultValue={defaultValue}/></label>;
 }
+
