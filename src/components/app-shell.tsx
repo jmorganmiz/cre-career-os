@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2, ContactRound, LayoutDashboard, BriefcaseBusiness, Sparkles,
-  Search, Bell, Plus, Settings, ChevronDown, Radar
+  Search, Bell, Plus, Settings, ChevronDown, Radar, Database, AlertTriangle
 } from "lucide-react";
 import { useState } from "react";
 import { useCareerData } from "@/components/data-provider";
@@ -21,15 +21,8 @@ const nav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, live, notice, clearNotice, signIn, signUp, signOut } = useCareerData();
+  const { live, notice, clearNotice } = useCareerData();
   const [accountOpen, setAccountOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
-  const [authMessage, setAuthMessage] = useState("");
-  const submitAuth = async (form: FormData) => {
-    const email = String(form.get("email") || "");
-    const password = String(form.get("password") || "");
-    setAuthMessage(authMode === "signin" ? await signIn(email, password) : await signUp(email, password));
-  };
 
   return (
     <div className="min-h-screen">
@@ -56,15 +49,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="ml-auto flex items-center gap-2">
             <Link href="/firms" className="btn-primary text-sm"><Plus size={16} /> Add firm</Link>
             <button className="grid h-9 w-9 place-items-center rounded-lg border border-[#e4e9e6] bg-white text-[#66736e]"><Bell size={16} /></button>
-            <button onClick={()=>setAccountOpen(true)} className="ml-1 flex items-center gap-2 rounded-lg py-1 pl-1 pr-2 hover:bg-white">
-              <span className="relative grid h-8 w-8 place-items-center rounded-lg bg-[#d9efe7] text-xs font-extrabold text-[#164c3a]">JM<span className={`absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white ${live?"bg-[#54a57f]":"bg-[#d6a54c]"}`}/></span>
+            <button onClick={() => setAccountOpen(true)} className="ml-1 flex items-center gap-2 rounded-lg py-1 pl-1 pr-2 hover:bg-white">
+              <span className="relative grid h-8 w-8 place-items-center rounded-lg bg-[#d9efe7] text-xs font-extrabold text-[#164c3a]">JM<span className={`absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white ${live ? "bg-[#54a57f]" : "bg-[#d6a54c]"}`}/></span>
               <ChevronDown className="desktop-only text-[#7c8984]" size={14} />
             </button>
           </div>
         </header>
-        <div className="mx-auto max-w-[1480px] p-5 md:p-8">{notice&&<button onClick={clearNotice} className={`mb-5 w-full rounded-xl border px-4 py-3 text-left text-xs font-bold ${notice.tone==="error"?"border-[#f1d4a8] bg-[#fff8ed] text-[#8a6120]":"border-[#cfe6db] bg-[#eef8f3] text-[#164c3a]"}`}>{notice.message}</button>}{children}</div>
+        <div className="mx-auto max-w-[1480px] p-5 md:p-8">{notice && <button onClick={clearNotice} className={`mb-5 w-full rounded-xl border px-4 py-3 text-left text-xs font-bold ${notice.tone === "error" ? "border-[#f1d4a8] bg-[#fff8ed] text-[#8a6120]" : "border-[#cfe6db] bg-[#eef8f3] text-[#164c3a]"}`}>{notice.message}</button>}{children}</div>
       </main>
-      {accountOpen&&<RecordModal title="Account & data sync" onClose={()=>setAccountOpen(false)}>{user?<div><div className="rounded-xl bg-[#eef5f2] p-4"><div className="text-xs font-bold text-[#718079]">Signed in as</div><div className="mt-1 text-sm font-extrabold">{user.email}</div><div className="mt-2 text-xs text-[#557166]">Your records are syncing with Supabase.</div></div><button onClick={signOut} className="btn-secondary mt-4 w-full">Sign out</button></div>:<div><div className="mb-4 grid grid-cols-2 rounded-xl bg-[#f2f5f3] p-1 text-xs font-extrabold"><button type="button" onClick={()=>{setAuthMode("signin");setAuthMessage("");}} className={`rounded-lg px-3 py-2 ${authMode==="signin"?"bg-white text-[#164c3a] shadow-sm":"text-[#718079]"}`}>Sign in</button><button type="button" onClick={()=>{setAuthMode("signup");setAuthMessage("");}} className={`rounded-lg px-3 py-2 ${authMode==="signup"?"bg-white text-[#164c3a] shadow-sm":"text-[#718079]"}`}>Create account</button></div><form action={submitAuth}><p className="mb-4 text-sm leading-6 text-[#65736d]">Use email and password to sync your career data with Supabase. No magic-link redirect required.</p><label className="block text-xs font-extrabold">Email<input name="email" type="email" required className="input mt-2 text-sm" placeholder="you@email.com"/></label><label className="mt-4 block text-xs font-extrabold">Password<input name="password" type="password" required minLength={6} className="input mt-2 text-sm" placeholder="Minimum 6 characters"/></label><button className="btn-primary mt-4 w-full">{authMode==="signin"?"Sign in":"Create account"}</button>{authMessage&&<div className="mt-3 rounded-lg bg-[#f2f5f3] p-3 text-xs font-bold text-[#557166]">{authMessage}</div>}</form></div>}</RecordModal>}
+      {accountOpen && <RecordModal title="Automatic sync" onClose={() => setAccountOpen(false)}>
+        <div className="space-y-4">
+          <div className={`rounded-xl border p-4 ${live ? "border-[#cfe6db] bg-[#eef8f3]" : "border-[#f1d4a8] bg-[#fff8ed]"}`}>
+            <div className="flex items-start gap-3">
+              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${live ? "bg-[#d9efe7] text-[#164c3a]" : "bg-[#f8e7c7] text-[#8a6120]"}`}>{live ? <Database size={17}/> : <AlertTriangle size={17}/>}</span>
+              <div>
+                <div className="text-sm font-extrabold">{live ? "Supabase sync is active" : "Supabase sync needs setup"}</div>
+                <p className="mt-2 text-xs leading-5 text-[#60706a]">{live ? "Every change saves through the server to your Supabase project. No sign-in is required." : "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel, then redeploy. Until then the app keeps using demo/local data."}</p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl bg-[#f7f9f8] p-4 text-xs leading-5 text-[#60706a]">
+            Browser login is turned off for this single-user build. The server owns the Supabase connection and writes records under one private owner id.
+          </div>
+        </div>
+      </RecordModal>}
     </div>
   );
 }

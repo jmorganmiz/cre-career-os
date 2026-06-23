@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
 import type { ActivityLog, Application, Contact, Firm, Notice, OpportunityRun, ResearchRun } from "@/lib/types";
 
 type Resource = "firms" | "contacts" | "applications";
@@ -38,6 +37,13 @@ const demoApplications: Application[] = [
 
 const DataContext = createContext<DataContextValue | null>(null);
 
+async function postData(body: Record<string, unknown>) {
+  const response = await fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Data sync failed.");
+  return data;
+}
+
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [firms, setFirms] = useState<Firm[]>(demoFirms);
   const [contacts, setContacts] = useState<Contact[]>(demoContacts);
@@ -46,7 +52,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [researchRuns, setResearchRuns] = useState<ResearchRun[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [live, setLive] = useState(false);
 
   const showNotice = (message: string, tone: Notice["tone"] = "success") => {
     setNotice({ message, tone });
@@ -54,157 +60,119 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (!supabase) return;
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
-    return () => data.subscription.unsubscribe();
+    fetch("/api/data").then(async (response) => {
+      const data = await response.json();
+      if (!response.ok || !data.configured) throw new Error(data.error || "Automatic Supabase sync is not configured.");
+      setFirms(data.firms || []);
+      setContacts(data.contacts || []);
+      setApplications(data.applications || []);
+      setOpportunityRuns(data.opportunityRuns || []);
+      setResearchRuns(data.researchRuns || []);
+      setActivityLog(data.activityLog || []);
+      setLive(true);
+    }).catch((error) => {
+      setLive(false);
+      showNotice(`${error.message} Using demo/local data.`, "error");
+    });
   }, []);
 
-  useEffect(() => {
-    if (!supabase || !user) return;
-    Promise.all([
-      supabase.from("firms").select("*").order("created_at", { ascending: false }),
-      supabase.from("contacts").select("*").order("created_at", { ascending: false }),
-      supabase.from("applications").select("*").order("created_at", { ascending: false }),
-      supabase.from("opportunity_runs").select("*").order("created_at", { ascending: false }).limit(12),
-      supabase.from("research_runs").select("*").order("created_at", { ascending: false }).limit(12),
-      supabase.from("activity_log").select("*").order("completed_at", { ascending: false }).limit(100),
-    ]).then(([f, c, a, runs, research, activity]) => {
-      if (f.data) setFirms(f.data);
-      if (c.data) setContacts(c.data);
-      if (a.data) setApplications(a.data);
-      if (runs.data) setOpportunityRuns(runs.data as OpportunityRun[]);
-      if (research.data) setResearchRuns(research.data as ResearchRun[]);
-      if (activity.data) setActivityLog(activity.data as ActivityLog[]);
-    });
-  }, [user]);
-
   const add: DataContextValue["add"] = async (resource, value) => {
-    if (supabase && user) {
-      const { data, error } = await supabase.from(resource).insert(value).select().single();
-      if (!error) {
-        if (resource === "firms") setFirms((x) => [data as Firm, ...x]);
-        if (resource === "contacts") setContacts((x) => [data as Contact, ...x]);
-        if (resource === "applications") setApplications((x) => [data as Application, ...x]);
-        showNotice("Saved to Supabase.");
-        return data as RecordMap[typeof resource];
-      }
-      showNotice(`Supabase save failed, saved locally only: ${error.message}`, "error");
+    try {
+      const { data } = await postData({ action: "add", resource, value });
+      if (resource === "firms") setFirms((x) => [data as Firm, ...x]);
+      if (resource === "contacts") setContacts((x) => [data as Contact, ...x]);
+      if (resource === "applications") setApplications((x) => [data as Application, ...x]);
+      showNotice("Saved to Supabase.");
+      return data as RecordMap[typeof resource];
+    } catch (error) {
+      showNotice(error instanceof Error ? error.message : "Saved locally only.", "error");
+      const item = { ...value, id: crypto.randomUUID() };
+      if (resource === "firms") setFirms((x) => [item as Firm, ...x]);
+      if (resource === "contacts") setContacts((x) => [item as Contact, ...x]);
+      if (resource === "applications") setApplications((x) => [item as Application, ...x]);
+      return item as RecordMap[typeof resource];
     }
-    const item = { ...value, id: crypto.randomUUID() };
-    if (resource === "firms") setFirms((x) => [item as Firm, ...x]);
-    if (resource === "contacts") setContacts((x) => [item as Contact, ...x]);
-    if (resource === "applications") setApplications((x) => [item as Application, ...x]);
-    if (!user) showNotice("Saved locally for this session.");
-    return item as RecordMap[typeof resource];
   };
 
   const update: DataContextValue["update"] = async (resource, id, value) => {
-    if (supabase && user) {
-      const { data, error } = await supabase.from(resource).update(value as RecordMap[typeof resource]).eq("id", id).select().single();
-      if (!error) {
-        if (resource === "firms") setFirms((x) => x.map((item) => item.id === id ? data as Firm : item));
-        if (resource === "contacts") setContacts((x) => x.map((item) => item.id === id ? data as Contact : item));
-        if (resource === "applications") setApplications((x) => x.map((item) => item.id === id ? data as Application : item));
-        showNotice("Changes saved.");
-        return data as RecordMap[typeof resource];
-      }
-      showNotice(`Supabase update failed, updated locally only: ${error.message}`, "error");
+    try {
+      const { data } = await postData({ action: "update", resource, id, value });
+      if (resource === "firms") setFirms((x) => x.map((item) => item.id === id ? data as Firm : item));
+      if (resource === "contacts") setContacts((x) => x.map((item) => item.id === id ? data as Contact : item));
+      if (resource === "applications") setApplications((x) => x.map((item) => item.id === id ? data as Application : item));
+      showNotice("Changes saved.");
+      return data as RecordMap[typeof resource];
+    } catch (error) {
+      showNotice(error instanceof Error ? error.message : "Updated locally only.", "error");
+      const local = { ...value, id };
+      if (resource === "firms") setFirms((x) => x.map((item) => item.id === id ? { ...item, ...local } as Firm : item));
+      if (resource === "contacts") setContacts((x) => x.map((item) => item.id === id ? { ...item, ...local } as Contact : item));
+      if (resource === "applications") setApplications((x) => x.map((item) => item.id === id ? { ...item, ...local } as Application : item));
+      return local as RecordMap[typeof resource];
     }
-    const local = { ...value, id };
-    if (resource === "firms") setFirms((x) => x.map((item) => item.id === id ? { ...item, ...local } as Firm : item));
-    if (resource === "contacts") setContacts((x) => x.map((item) => item.id === id ? { ...item, ...local } as Contact : item));
-    if (resource === "applications") setApplications((x) => x.map((item) => item.id === id ? { ...item, ...local } as Application : item));
-    return local as RecordMap[typeof resource];
   };
 
   const remove = async (resource: Resource, id?: string) => {
     if (!id) return;
-    if (supabase && user) {
-      const { error } = await supabase.from(resource).delete().eq("id", id);
-      if (error) showNotice(`Delete failed in Supabase, removed locally only: ${error.message}`, "error");
-      else showNotice("Record deleted.");
-    }
+    try { await postData({ action: "remove", resource, id }); showNotice("Record deleted."); }
+    catch (error) { showNotice(error instanceof Error ? error.message : "Deleted locally only.", "error"); }
     if (resource === "firms") setFirms((x) => x.filter((v) => v.id !== id));
     if (resource === "contacts") setContacts((x) => x.filter((v) => v.id !== id));
     if (resource === "applications") setApplications((x) => x.filter((v) => v.id !== id));
   };
 
   const importMany: DataContextValue["importMany"] = async (resource, items) => {
-    if (supabase && user) {
-      const { data, error } = await supabase.from(resource).insert(items).select();
-      if (!error) {
-        if (resource === "firms") setFirms((x) => [...(data as Firm[]), ...x]);
-        if (resource === "contacts") setContacts((x) => [...(data as Contact[]), ...x]);
-        if (resource === "applications") setApplications((x) => [...(data as Application[]), ...x]);
-        showNotice(`${items.length} records imported.`);
-        return;
-      }
-      showNotice(`Supabase import failed, imported locally only: ${error.message}`, "error");
+    try {
+      const { data } = await postData({ action: "importMany", resource, items });
+      if (resource === "firms") setFirms((x) => [...(data as Firm[]), ...x]);
+      if (resource === "contacts") setContacts((x) => [...(data as Contact[]), ...x]);
+      if (resource === "applications") setApplications((x) => [...(data as Application[]), ...x]);
+      showNotice(`${items.length} records imported.`);
+    } catch (error) {
+      showNotice(error instanceof Error ? error.message : "Imported locally only.", "error");
+      const local = items.map((v) => ({ ...v, id: crypto.randomUUID() }));
+      if (resource === "firms") setFirms((x) => [...(local as unknown as Firm[]), ...x]);
+      if (resource === "contacts") setContacts((x) => [...(local as unknown as Contact[]), ...x]);
+      if (resource === "applications") setApplications((x) => [...(local as unknown as Application[]), ...x]);
     }
-    const local = items.map((v) => ({ ...v, id: crypto.randomUUID() }));
-    if (resource === "firms") setFirms((x) => [...(local as unknown as Firm[]), ...x]);
-    if (resource === "contacts") setContacts((x) => [...(local as unknown as Contact[]), ...x]);
-    if (resource === "applications") setApplications((x) => [...(local as unknown as Application[]), ...x]);
   };
 
   const addOpportunityRun: DataContextValue["addOpportunityRun"] = async (input, output) => {
-    if (supabase && user) {
-      const { data, error } = await supabase.from("opportunity_runs").insert({ input, output }).select().single();
-      if (!error) {
-        const run = data as OpportunityRun;
-        setOpportunityRuns((current) => [run, ...current].slice(0, 12));
-        return run;
-      }
+    try {
+      const { data } = await postData({ action: "opportunityRun", input, output });
+      setOpportunityRuns((current) => [data as OpportunityRun, ...current].slice(0, 12));
+      return data as OpportunityRun;
+    } catch {
+      const run: OpportunityRun = { id: crypto.randomUUID(), input, output, created_at: new Date().toISOString() };
+      setOpportunityRuns((current) => [run, ...current].slice(0, 12));
+      return run;
     }
-    const run: OpportunityRun = { id: crypto.randomUUID(), input, output, created_at: new Date().toISOString() };
-    setOpportunityRuns((current) => [run, ...current].slice(0, 12));
-    return run;
   };
 
   const addResearchRun: DataContextValue["addResearchRun"] = async (input, output, firmId) => {
-    if (supabase && user) {
-      const { data, error } = await supabase.from("research_runs").insert({ input, output, firm_id: firmId }).select().single();
-      if (!error) {
-        const run = data as ResearchRun;
-        setResearchRuns((current) => [run, ...current].slice(0, 12));
-        return run;
-      }
-      showNotice(`Research history was not saved: ${error.message}`, "error");
+    try {
+      const { data } = await postData({ action: "researchRun", input, output, firmId });
+      setResearchRuns((current) => [data as ResearchRun, ...current].slice(0, 12));
+      return data as ResearchRun;
+    } catch (error) {
+      showNotice(error instanceof Error ? error.message : "Research history saved locally only.", "error");
+      const run: ResearchRun = { id: crypto.randomUUID(), firm_id: firmId, input, output, created_at: new Date().toISOString() };
+      setResearchRuns((current) => [run, ...current].slice(0, 12));
+      return run;
     }
-    const run: ResearchRun = { id: crypto.randomUUID(), firm_id: firmId, input, output, created_at: new Date().toISOString() };
-    setResearchRuns((current) => [run, ...current].slice(0, 12));
-    return run;
   };
 
   const completeAction: DataContextValue["completeAction"] = async (action) => {
     const completed: ActivityLog = { ...action, completed_at: new Date().toISOString() };
     setActivityLog((current) => current.some((item) => item.action_id === action.action_id) ? current : [completed, ...current]);
-    if (supabase && user) {
-      const { error } = await supabase.from("activity_log").upsert(action, { onConflict: "user_id,action_id" });
-      if (error) showNotice(`Action completion saved locally only: ${error.message}`, "error");
-    }
+    try { await postData({ action: "completeAction", activity: action }); }
+    catch (error) { showNotice(error instanceof Error ? error.message : "Action completion saved locally only.", "error"); }
   };
 
-  const signIn = async (email: string, password: string) => {
-    if (!supabase) return "Add Supabase credentials to .env.local first.";
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return error.message;
-    showNotice("Signed in.");
-    return "Signed in.";
-  };
+  const authDisabled = async () => "Automatic Supabase sync is enabled. No sign-in required.";
+  const signOut = async () => undefined;
 
-  const signUp = async (email: string, password: string) => {
-    if (!supabase) return "Add Supabase credentials to .env.local first.";
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) return error.message;
-    showNotice("Account created. If email confirmation is enabled, confirm your email before signing in.");
-    return "Account created. You can sign in now unless Supabase requires email confirmation.";
-  };
-
-  const signOut = async () => { await supabase?.auth.signOut(); };
-
-  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, researchRuns, activityLog, user, live: Boolean(supabase && user), notice, add, update, remove, importMany, addOpportunityRun, addResearchRun, completeAction, clearNotice: () => setNotice(null), signIn, signUp, signOut }}>{children}</DataContext.Provider>;
+  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, researchRuns, activityLog, user: null, live, notice, add, update, remove, importMany, addOpportunityRun, addResearchRun, completeAction, clearNotice: () => setNotice(null), signIn: authDisabled, signUp: authDisabled, signOut }}>{children}</DataContext.Provider>;
 }
 
 export const useCareerData = () => {
