@@ -1,5 +1,18 @@
 import { NextResponse } from "next/server";
 import { careerProfilePrompt } from "@/lib/career-profile";
+import { runOpenAIJsonAgent } from "@/lib/openai-agent";
+
+type ResearchBrief = {
+  firm_summary: string;
+  fit: string;
+  questions: string[];
+  linkedin_message: string;
+  talking_points: string[];
+  red_flags: string[];
+  sources: { title: string; url: string }[];
+  demo?: boolean;
+  agent_error?: string;
+};
 
 const fallback = (firm: string) => ({
   firm_summary: `${firm} is a target firm in your CRE career pipeline. Add an OpenAI API key to enable live web research and cited findings.`,
@@ -34,14 +47,8 @@ Contact bio: ${input.contact_bio || "none"}
 Job description: ${input.job_description || "none"}
 Return only valid JSON with keys firm_summary, fit, questions (array), linkedin_message, talking_points (array), red_flags (array), sources (array of {title,url}). Be concise, specific, factual, and use current web research.`;
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({ model: process.env.OPENAI_MODEL || "gpt-5.4-mini", tools: [{ type: "web_search", search_context_size: "low" }], input: prompt }),
-  });
-  if (!response.ok) return NextResponse.json(fallbackWithAgentError(firm, response.status, await response.text()));
-  const data = await response.json();
-  const text = data.output_text || data.output?.flatMap((x: { content?: { text?: string }[] }) => x.content || []).map((x: { text?: string }) => x.text || "").join("");
-  try { return NextResponse.json(JSON.parse(text.replace(/^```json|```$/g, "").trim())); }
-  catch { return NextResponse.json({ ...fallback(firm), firm_summary: text || fallback(firm).firm_summary, demo: false }); }
+  const result = await runOpenAIJsonAgent<ResearchBrief>(prompt);
+  if (result.ok) return NextResponse.json(result.value);
+  if (result.raw) return NextResponse.json({ ...fallback(firm), firm_summary: result.raw || fallback(firm).firm_summary, agent_error: result.detail, demo: false });
+  return NextResponse.json(fallbackWithAgentError(firm, result.status, result.detail));
 }

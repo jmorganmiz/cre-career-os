@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { careerProfilePrompt } from "@/lib/career-profile";
+import { runOpenAIJsonAgent } from "@/lib/openai-agent";
 
 type OpportunityInput = {
   target_roles?: string;
@@ -9,6 +10,8 @@ type OpportunityInput = {
   must_haves?: string;
   avoid?: string;
 };
+
+type OpportunityBrief = ReturnType<typeof fallback>;
 
 const fallback = (input: OpportunityInput) => ({
   search_summary: "Add OPENAI_API_KEY on Vercel to enable live opportunity discovery with web search. This demo output shows the format the agent will use.",
@@ -91,26 +94,8 @@ Rules:
 - Favor roles likely suitable for a recent graduate or early-career candidate.
 - Keep every opportunity specific and actionable.`;
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-5.4-mini",
-      tools: [{ type: "web_search", search_context_size: "low" }],
-      input: prompt,
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    return NextResponse.json(fallbackWithAgentError(input, response.status, detail));
-  }
-  const data = await response.json();
-  const text = data.output_text || data.output?.flatMap((x: { content?: { text?: string }[] }) => x.content || []).map((x: { text?: string }) => x.text || "").join("");
-
-  try {
-    return NextResponse.json(JSON.parse(text.replace(/^```json|```$/g, "").trim()));
-  } catch {
-    return NextResponse.json({ ...fallback(input), search_summary: text || fallback(input).search_summary, demo: false });
-  }
+  const result = await runOpenAIJsonAgent<OpportunityBrief>(prompt);
+  if (result.ok) return NextResponse.json(result.value);
+  if (result.raw) return NextResponse.json({ ...fallback(input), search_summary: result.raw || fallback(input).search_summary, agent_error: result.detail, demo: false });
+  return NextResponse.json(fallbackWithAgentError(input, result.status, result.detail));
 }

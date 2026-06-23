@@ -30,7 +30,7 @@ type OpportunityBrief = {
 };
 
 export default function OpportunitiesPage() {
-  const { add } = useCareerData();
+  const { firms, add } = useCareerData();
   const [form, setForm] = useState(defaultOpportunityCriteria);
   const [brief, setBrief] = useState<OpportunityBrief | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,13 +51,25 @@ export default function OpportunitiesPage() {
   };
 
   const saveOpportunity = async (opportunity: Opportunity) => {
+    const firmName = opportunity.firm_name.trim();
+    const existingFirm = firms.find((firm) => firm.name.toLowerCase() === firmName.toLowerCase());
+    const linkedFirm = existingFirm || await add("firms", {
+      name: firmName,
+      city: opportunity.city,
+      category: opportunity.category,
+      priority: opportunity.fit_score >= 85 ? "Tier 1" : "Tier 2",
+      careers_url: opportunity.source_url,
+      why_interested: opportunity.why_fit,
+    });
+
     await add("applications", {
+      firm_id: linkedFirm.id,
       role_title: opportunity.role_title,
       city: opportunity.city,
       job_url: opportunity.source_url,
       status: "Saved",
       interview_stage: "Opportunity found",
-      notes: `${opportunity.firm_name} | Fit ${opportunity.fit_score}/100 | ${opportunity.why_fit}\nNext step: ${opportunity.next_step}`,
+      notes: `${firmName} | Fit ${opportunity.fit_score}/100 | ${opportunity.why_fit}\nNext step: ${opportunity.next_step}`,
     });
     setSaved((current) => [...current, `${opportunity.firm_name}-${opportunity.role_title}`]);
   };
@@ -136,3 +148,4 @@ export default function OpportunitiesPage() {
     </div>
   </>;
 }
+

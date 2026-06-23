@@ -9,7 +9,7 @@ type Resource = "firms" | "contacts" | "applications";
 type RecordMap = { firms: Firm; contacts: Contact; applications: Application };
 type DataContextValue = {
   firms: Firm[]; contacts: Contact[]; applications: Application[]; user: User | null; live: boolean;
-  add: <K extends Resource>(resource: K, value: RecordMap[K]) => Promise<void>;
+  add: <K extends Resource>(resource: K, value: RecordMap[K]) => Promise<RecordMap[K]>;
   remove: (resource: Resource, id?: string) => Promise<void>;
   importMany: <K extends Resource>(resource: K, items: RecordMap[K][]) => Promise<void>;
   signIn: (email: string) => Promise<string>;
@@ -65,12 +65,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (resource === "firms") setFirms((x) => [data as Firm, ...x]);
       if (resource === "contacts") setContacts((x) => [data as Contact, ...x]);
       if (resource === "applications") setApplications((x) => [data as Application, ...x]);
-      return;
+      return data as RecordMap[typeof resource];
     }
     const item = { ...value, id: crypto.randomUUID() };
     if (resource === "firms") setFirms((x) => [item as Firm, ...x]);
     if (resource === "contacts") setContacts((x) => [item as Contact, ...x]);
     if (resource === "applications") setApplications((x) => [item as Application, ...x]);
+    return item as RecordMap[typeof resource];
   };
 
   const remove = async (resource: Resource, id?: string) => {
@@ -114,3 +115,4 @@ export const useCareerData = () => {
   if (!value) throw new Error("useCareerData must be used inside DataProvider");
   return value;
 };
+
