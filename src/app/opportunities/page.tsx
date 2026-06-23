@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUpRight, BriefcaseBusiness, Check, ExternalLink, LoaderCircle, Radar, Save, Search, Sparkles, Target } from "lucide-react";
+import { ArrowUpRight, BriefcaseBusiness, Check, ExternalLink, History, LoaderCircle, Radar, Save, Search, Sparkles, Target } from "lucide-react";
 import { useCareerData } from "@/components/data-provider";
 import { Badge, PageHeader } from "@/components/ui";
 import { careerProfile, defaultOpportunityCriteria } from "@/lib/career-profile";
@@ -47,7 +47,7 @@ function buildOpportunityNotes(opportunity: Opportunity, criteria: typeof defaul
 }
 
 export default function OpportunitiesPage() {
-  const { firms, add } = useCareerData();
+  const { firms, opportunityRuns, add, addOpportunityRun } = useCareerData();
   const [form, setForm] = useState(defaultOpportunityCriteria);
   const [brief, setBrief] = useState<OpportunityBrief | null>(null);
   const [loading, setLoading] = useState(false);
@@ -57,14 +57,23 @@ export default function OpportunitiesPage() {
 
   const run = async () => {
     setLoading(true);
-    const response = await fetch("/api/opportunities", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await response.json();
-    setBrief(data);
-    setLoading(false);
+    try {
+      const response = await fetch("/api/opportunities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await response.json();
+      setBrief(data);
+      addOpportunityRun(form, data).catch((error) => console.error("Could not save opportunity run", error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const restoreRun = (run: typeof opportunityRuns[number]) => {
+    setForm((current) => ({ ...current, ...run.input }));
+    setBrief(run.output as OpportunityBrief);
   };
 
   const saveOpportunity = async (opportunity: Opportunity) => {
@@ -115,6 +124,15 @@ export default function OpportunitiesPage() {
         <button onClick={run} className="btn-primary mt-5 w-full text-sm" disabled={loading}>
           {loading ? <LoaderCircle className="animate-spin" size={16}/> : <Search size={16}/>} Find opportunities
         </button>
+        {opportunityRuns.length > 0 && <div className="mt-5 border-t border-[#e4e9e6] pt-5">
+          <div className="mb-3 flex items-center gap-2 text-xs font-extrabold text-[#164c3a]"><History size={14}/> Recent runs</div>
+          <div className="space-y-2">
+            {opportunityRuns.slice(0, 4).map((run) => <button key={run.id} onClick={() => restoreRun(run)} className="w-full rounded-xl border border-[#e4e9e6] bg-white p-3 text-left hover:bg-[#f7f9f8]">
+              <div className="text-xs font-extrabold text-[#24312c]">{run.input.target_roles || "Opportunity search"}</div>
+              <div className="mt-1 text-[11px] font-bold text-[#7a8781]">{run.input.target_markets || "Any market"} | {run.output.opportunities?.length || 0} roles | {run.created_at?.slice(0, 10) || "Today"}</div>
+            </button>)}
+          </div>
+        </div>}
       </div>
 
       <div>

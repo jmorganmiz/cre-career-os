@@ -3,15 +3,16 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import type { Application, Contact, Firm } from "@/lib/types";
+import type { Application, Contact, Firm, OpportunityRun } from "@/lib/types";
 
 type Resource = "firms" | "contacts" | "applications";
 type RecordMap = { firms: Firm; contacts: Contact; applications: Application };
 type DataContextValue = {
-  firms: Firm[]; contacts: Contact[]; applications: Application[]; user: User | null; live: boolean;
+  firms: Firm[]; contacts: Contact[]; applications: Application[]; opportunityRuns: OpportunityRun[]; user: User | null; live: boolean;
   add: <K extends Resource>(resource: K, value: RecordMap[K]) => Promise<RecordMap[K]>;
   remove: (resource: Resource, id?: string) => Promise<void>;
   importMany: <K extends Resource>(resource: K, items: RecordMap[K][]) => Promise<void>;
+  addOpportunityRun: (input: OpportunityRun["input"], output: OpportunityRun["output"]) => Promise<OpportunityRun>;
   signIn: (email: string) => Promise<string>;
   signOut: () => Promise<void>;
 };
@@ -36,6 +37,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [firms, setFirms] = useState<Firm[]>(demoFirms);
   const [contacts, setContacts] = useState<Contact[]>(demoContacts);
   const [applications, setApplications] = useState<Application[]>(demoApplications);
+  const [opportunityRuns, setOpportunityRuns] = useState<OpportunityRun[]>([]);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -51,10 +53,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       supabase.from("firms").select("*").order("created_at", { ascending: false }),
       supabase.from("contacts").select("*").order("created_at", { ascending: false }),
       supabase.from("applications").select("*").order("created_at", { ascending: false }),
-    ]).then(([f, c, a]) => {
+      supabase.from("opportunity_runs").select("*").order("created_at", { ascending: false }).limit(12),
+    ]).then(([f, c, a, runs]) => {
       if (f.data) setFirms(f.data);
       if (c.data) setContacts(c.data);
       if (a.data) setApplications(a.data);
+      if (runs.data) setOpportunityRuns(runs.data as OpportunityRun[]);
     });
   }, [user]);
 
@@ -100,6 +104,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addOpportunityRun: DataContextValue["addOpportunityRun"] = async (input, output) => {
+    if (supabase && user) {
+      const { data, error } = await supabase.from("opportunity_runs").insert({ input, output }).select().single();
+      if (error) throw error;
+      const run = data as OpportunityRun;
+      setOpportunityRuns((current) => [run, ...current].slice(0, 12));
+      return run;
+    }
+    const run: OpportunityRun = { id: crypto.randomUUID(), input, output, created_at: new Date().toISOString() };
+    setOpportunityRuns((current) => [run, ...current].slice(0, 12));
+    return run;
+  };
+
   const signIn = async (email: string) => {
     if (!supabase) return "Add Supabase credentials to .env.local first.";
     const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
@@ -107,7 +124,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
   const signOut = async () => { await supabase?.auth.signOut(); };
 
-  return <DataContext.Provider value={{ firms, contacts, applications, user, live: Boolean(supabase && user), add, remove, importMany, signIn, signOut }}>{children}</DataContext.Provider>;
+  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, user, live: Boolean(supabase && user), add, remove, importMany, addOpportunityRun, signIn, signOut }}>{children}</DataContext.Provider>;
 }
 
 export const useCareerData = () => {
@@ -115,4 +132,3 @@ export const useCareerData = () => {
   if (!value) throw new Error("useCareerData must be used inside DataProvider");
   return value;
 };
-

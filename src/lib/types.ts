@@ -12,3 +12,16 @@ export type Application = {
   id?: string; firm_id?: string; role_title: string; city?: string; job_url?: string; status?: string;
   date_applied?: string; referral_contact_id?: string; interview_stage?: string; follow_up_at?: string; notes?: string;
 };
+export type OpportunityRun = {
+  id?: string;
+  input: Record<string, string>;
+  output: {
+    search_summary?: string;
+    strategy?: string[];
+    opportunities?: { firm_name?: string; role_title?: string; fit_score?: number }[];
+    searches_to_run_next?: string[];
+    demo?: boolean;
+    agent_error?: string;
+  };
+  created_at?: string;
+};
