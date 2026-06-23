@@ -17,7 +17,8 @@ type DataContextValue = {
   addResearchRun: (input: ResearchRun["input"], output: ResearchRun["output"], firmId?: string) => Promise<ResearchRun>;
   completeAction: (action: Omit<ActivityLog, "id" | "completed_at">) => Promise<void>;
   clearNotice: () => void;
-  signIn: (email: string) => Promise<string>;
+  signIn: (email: string, password: string) => Promise<string>;
+  signUp: (email: string, password: string) => Promise<string>;
   signOut: () => Promise<void>;
 };
 
@@ -185,14 +186,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signIn = async (email: string) => {
+  const signIn = async (email: string, password: string) => {
     if (!supabase) return "Add Supabase credentials to .env.local first.";
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
-    return error ? error.message : "Magic sign-in link sent. Check your email.";
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return error.message;
+    showNotice("Signed in.");
+    return "Signed in.";
   };
+
+  const signUp = async (email: string, password: string) => {
+    if (!supabase) return "Add Supabase credentials to .env.local first.";
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) return error.message;
+    showNotice("Account created. If email confirmation is enabled, confirm your email before signing in.");
+    return "Account created. You can sign in now unless Supabase requires email confirmation.";
+  };
+
   const signOut = async () => { await supabase?.auth.signOut(); };
 
-  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, researchRuns, activityLog, user, live: Boolean(supabase && user), notice, add, update, remove, importMany, addOpportunityRun, addResearchRun, completeAction, clearNotice: () => setNotice(null), signIn, signOut }}>{children}</DataContext.Provider>;
+  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, researchRuns, activityLog, user, live: Boolean(supabase && user), notice, add, update, remove, importMany, addOpportunityRun, addResearchRun, completeAction, clearNotice: () => setNotice(null), signIn, signUp, signOut }}>{children}</DataContext.Provider>;
 }
 
 export const useCareerData = () => {
