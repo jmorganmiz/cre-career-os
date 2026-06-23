@@ -29,6 +29,23 @@ type OpportunityBrief = {
   agent_error?: string;
 };
 
+function followUpDateForFit(score: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + (score >= 85 ? 1 : score >= 75 ? 3 : 7));
+  return date.toISOString().slice(0, 10);
+}
+
+function buildOpportunityNotes(opportunity: Opportunity, criteria: typeof defaultOpportunityCriteria) {
+  return [
+    `${opportunity.firm_name} | Fit ${opportunity.fit_score}/100 | ${opportunity.why_fit}`,
+    `Source: ${opportunity.source_title} (${opportunity.source_url})`,
+    `Next step: ${opportunity.next_step}`,
+    `Talking points: ${opportunity.talking_points?.join("; ") || "None returned"}`,
+    `Risks: ${opportunity.risks?.join("; ") || "None returned"}`,
+    `Search criteria: roles=${criteria.target_roles}; markets=${criteria.target_markets}; themes=${criteria.asset_classes}; company types=${criteria.company_types}`,
+  ].join("\n");
+}
+
 export default function OpportunitiesPage() {
   const { firms, add } = useCareerData();
   const [form, setForm] = useState(defaultOpportunityCriteria);
@@ -68,8 +85,9 @@ export default function OpportunitiesPage() {
       city: opportunity.city,
       job_url: opportunity.source_url,
       status: "Saved",
-      interview_stage: "Opportunity found",
-      notes: `${firmName} | Fit ${opportunity.fit_score}/100 | ${opportunity.why_fit}\nNext step: ${opportunity.next_step}`,
+      interview_stage: `Opportunity found | ${opportunity.fit_score}/100 fit`,
+      follow_up_at: followUpDateForFit(opportunity.fit_score),
+      notes: buildOpportunityNotes(opportunity, form),
     });
     setSaved((current) => [...current, `${opportunity.firm_name}-${opportunity.role_title}`]);
   };
@@ -148,4 +166,3 @@ export default function OpportunitiesPage() {
     </div>
   </>;
 }
-
