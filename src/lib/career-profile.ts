@@ -96,7 +96,8 @@ export const defaultOpportunityCriteria = {
   target_markets: [...careerProfile.targetLocations, ...careerProfile.secondaryLocations].join(", "),
   asset_classes: `Primary: ${careerProfile.preferredAssetClasses.primary.join(", ")}. Secondary: ${careerProfile.preferredAssetClasses.secondary.join(", ")}.`,
   company_types: careerProfile.companyTypes.join(", "),
-  must_haves: "Early-career friendly, analytical responsibility, exposure to deals or capital allocation, strong mentorship, strong culture, learning curve, relationship-building upside.",
+  target_timing: "Spring 2027 or Summer 2027 starts only. Prioritize 2027 new graduate analyst programs, 2027 analyst roles, and summer 2027 internships/early-career programs. Exclude Summer 2026 internships and roles requiring an immediate 2026 start.",
+  must_haves: "Spring/Summer 2027 timing, early-career friendly, analytical responsibility, exposure to deals or capital allocation, strong mentorship, strong culture, learning curve, relationship-building upside.",
   avoid: careerProfile.dealBreakers.join(", "),
 };
 
@@ -129,3 +130,4 @@ Compensation philosophy: ${careerProfile.compensationPhilosophy}
 Work authorization: ${careerProfile.workAuthorization}
 Deal-breakers: ${careerProfile.dealBreakers.join(", ")}`;
 }
+

@@ -42,6 +42,7 @@ function buildOpportunityNotes(opportunity: Opportunity, criteria: typeof defaul
     `Next step: ${opportunity.next_step}`,
     `Talking points: ${opportunity.talking_points?.join("; ") || "None returned"}`,
     `Risks: ${opportunity.risks?.join("; ") || "None returned"}`,
+    `Target timing: ${criteria.target_timing}`,
     `Search criteria: roles=${criteria.target_roles}; markets=${criteria.target_markets}; themes=${criteria.asset_classes}; company types=${criteria.company_types}`,
   ].join("\n");
 }
@@ -118,6 +119,7 @@ export default function OpportunitiesPage() {
           <label className="block text-xs font-extrabold">Target markets<textarea className="input mt-2 min-h-16 text-sm leading-6" value={form.target_markets} onChange={(e)=>field("target_markets",e.target.value)}/></label>
           <label className="block text-xs font-extrabold">Asset classes / themes<textarea className="input mt-2 min-h-16 text-sm leading-6" value={form.asset_classes} onChange={(e)=>field("asset_classes",e.target.value)}/></label>
           <label className="block text-xs font-extrabold">Company types<textarea className="input mt-2 min-h-16 text-sm leading-6" value={form.company_types} onChange={(e)=>field("company_types",e.target.value)}/></label>
+          <label className="block text-xs font-extrabold">Target timing<textarea className="input mt-2 min-h-16 text-sm leading-6" value={form.target_timing} onChange={(e)=>field("target_timing",e.target.value)}/></label>
           <label className="block text-xs font-extrabold">Must haves<textarea className="input mt-2 min-h-16 text-sm leading-6" value={form.must_haves} onChange={(e)=>field("must_haves",e.target.value)}/></label>
           <label className="block text-xs font-extrabold">Avoid<textarea className="input mt-2 min-h-16 text-sm leading-6" value={form.avoid} onChange={(e)=>field("avoid",e.target.value)}/></label>
         </div>
@@ -139,7 +141,7 @@ export default function OpportunitiesPage() {
         {loading ? <div className="card grid min-h-[460px] place-items-center p-8 text-center">
           <div><LoaderCircle className="mx-auto animate-spin text-[#164c3a]" size={30}/><div className="mt-4 text-sm font-extrabold">Searching the market...</div><div className="mt-1 text-xs text-[#7a8781]">The agent is scanning roles, career pages, and fit signals.</div></div>
         </div> : !brief ? <div className="card grid min-h-[460px] place-items-center p-8 text-center">
-          <div><Target className="mx-auto text-[#77a392]" size={30}/><div className="mt-4 text-sm font-extrabold">Describe what you want</div><div className="mt-1 max-w-sm text-xs leading-5 text-[#7a8781]">The agent will return specific roles, fit scores, risks, next steps, and source links.</div></div>
+          <div><Target className="mx-auto text-[#77a392]" size={30}/><div className="mt-4 text-sm font-extrabold">Describe what you want</div><div className="mt-1 max-w-sm text-xs leading-5 text-[#7a8781]">The agent will return Spring/Summer 2027 roles with fit scores, risks, next steps, and source links.</div></div>
         </div> : <div className="space-y-4">
           <div className="card p-5">
             <div className="mb-2 flex items-center gap-2 text-sm font-extrabold"><Sparkles size={16} className="text-[#164c3a]"/> Search summary</div>
@@ -184,3 +186,4 @@ export default function OpportunitiesPage() {
     </div>
   </>;
 }
+

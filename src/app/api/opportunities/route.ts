@@ -7,6 +7,7 @@ type OpportunityInput = {
   target_markets?: string;
   asset_classes?: string;
   company_types?: string;
+  target_timing?: string;
   must_haves?: string;
   avoid?: string;
 };
@@ -16,6 +17,7 @@ type OpportunityBrief = ReturnType<typeof fallback>;
 const fallback = (input: OpportunityInput) => ({
   search_summary: "Add OPENAI_API_KEY on Vercel to enable live opportunity discovery with web search. This demo output shows the format the agent will use.",
   strategy: [
+    "Prioritize Spring 2027 or Summer 2027 starts only: 2027 new graduate analyst programs, 2027 analyst roles, and summer 2027 internships/early-career programs.",
     "Prioritize roles that combine CRE fundamentals with capital markets, asset management, acquisitions, PropTech, or AI/data exposure.",
     "Use warm-network paths before applying cold, especially at firms already in your target list.",
     "Track promising roles as Saved first, then move to Networking once you find a contact.",
@@ -23,20 +25,20 @@ const fallback = (input: OpportunityInput) => ({
   opportunities: [
     {
       firm_name: "Walker & Dunlop",
-      role_title: "Capital Markets Analyst",
+      role_title: "2027 Capital Markets Analyst",
       city: "Bethesda, MD",
       category: "Lending",
       fit_score: 88,
       why_fit: "Strong match for lending, multifamily, capital markets, and early-career analytical exposure.",
       source_url: "https://www.walkerdunlop.com/careers/",
       source_title: "Walker & Dunlop Careers",
-      next_step: "Look for an analyst role and contact a capital markets associate for role context.",
+      next_step: "Verify Spring/Summer 2027 start eligibility, then contact a capital markets associate for role context.",
       talking_points: ["Multifamily lending interest", "Analytical underwriting foundation", "Desire to learn debt capital markets"],
-      risks: ["Confirm exact office location", "Validate new-grad eligibility"],
+      risks: ["Confirm exact office location", "Validate Spring/Summer 2027 start timing and new-grad eligibility"],
     },
     {
       firm_name: "VTS",
-      role_title: "Strategy & Operations Associate",
+      role_title: "Summer 2027 Strategy & Operations Intern / New Grad Track",
       city: "New York, NY",
       category: "PropTech",
       fit_score: 82,
@@ -45,12 +47,12 @@ const fallback = (input: OpportunityInput) => ({
       source_title: "VTS Careers",
       next_step: "Research product strategy team members and tailor outreach around CRE workflow automation.",
       talking_points: ["CRE plus technology interest", "Comfort translating user problems into workflows", "AI/data curiosity"],
-      risks: ["May require prior SaaS experience", "Role availability changes quickly"],
+      risks: ["May require prior SaaS experience", "Verify the posting is for Summer 2027 or a 2027 graduate start"],
     },
   ],
   searches_to_run_next: [
-    `${input.target_roles || "CRE analyst"} ${input.target_markets || "Dallas Atlanta Chicago"} careers`,
-    `${input.company_types || "multifamily lending PropTech"} new graduate analyst roles`,
+    `${input.target_roles || "CRE analyst"} ${input.target_markets || "Dallas Atlanta Chicago"} Spring 2027 Summer 2027 careers`,
+    `${input.company_types || "multifamily lending PropTech"} 2027 new graduate analyst roles summer 2027`,
   ],
   demo: true,
 });
@@ -79,6 +81,7 @@ User criteria:
 - Target markets: ${input.target_markets || "United States, with preference for major CRE markets"}
 - Asset classes: ${input.asset_classes || "multifamily, commercial real estate"}
 - Company types: ${input.company_types || "owners, operators, lenders, brokerages, PropTech, real estate AI companies"}
+- Target timing: ${input.target_timing || "Spring 2027 or Summer 2027 starts only; exclude Summer 2026 and immediate 2026 starts"}
 - Must haves: ${input.must_haves || "early-career friendly, strong learning environment"}
 - Avoid: ${input.avoid || "unclear fit or outdated postings"}
 
@@ -90,6 +93,9 @@ searches_to_run_next: string[].
 
 Rules:
 - Prefer live career pages, reputable job pages, or company pages as sources.
+- Only return jobs, internships, analyst programs, or early-career programs that are explicitly or plausibly for Spring 2027 or Summer 2027 starts.
+- Exclude Summer 2026 internships, immediate-start 2026 roles, experienced-only roles, and roles that clearly require graduation before 2027.
+- In next_step or risks, state what to verify about Spring/Summer 2027 eligibility.
 - Do not invent application URLs. If unsure, use the firm's careers page and say what to verify.
 - Favor roles likely suitable for a recent graduate or early-career candidate.
 - Keep every opportunity specific and actionable.`;
@@ -99,3 +105,4 @@ Rules:
   if (result.raw) return NextResponse.json({ ...fallback(input), search_summary: result.raw || fallback(input).search_summary, agent_error: result.detail, demo: false });
   return NextResponse.json(fallbackWithAgentError(input, result.status, result.detail));
 }
+
