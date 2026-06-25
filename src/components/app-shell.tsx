@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 flex h-[68px] items-center justify-between border-b border-[#e4e9e6] bg-[#f6f8f6]/95 px-5 backdrop-blur md:px-8">
           <div className="relative hidden w-full max-w-[360px] md:block"><Search className="absolute left-3 top-2.5 text-[#89948f]" size={16} /><input className="input !bg-white !py-2 !pl-9 text-sm" placeholder="Search firms, contacts, roles..." /></div>
           <div className="ml-auto flex items-center gap-2">
-            <Link href="/firms" className="btn-primary text-sm"><Plus size={16} /> Add firm</Link>
+            <Link href="/firms#new" className="btn-primary text-sm"><Plus size={16} /> Add firm</Link>
             <button className="grid h-9 w-9 place-items-center rounded-lg border border-[#e4e9e6] bg-white text-[#66736e]"><Bell size={16} /></button>
             <button onClick={() => setAccountOpen(true)} className="ml-1 flex items-center gap-2 rounded-lg py-1 pl-1 pr-2 hover:bg-white">
               <span className="relative grid h-8 w-8 place-items-center rounded-lg bg-[#d9efe7] text-xs font-extrabold text-[#164c3a]">JM<span className={`absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white ${live ? "bg-[#54a57f]" : "bg-[#d6a54c]"}`}/></span>
@@ -76,3 +76,4 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
