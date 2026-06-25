@@ -30,6 +30,14 @@ export function TableToolbar({ placeholder, query = "", onQueryChange, filters =
   </div>;
 }
 
+export function EmptyState({ title, text, action, onAction }: { title: string; text: string; action?: string; onAction?: () => void }) {
+  return <div className="rounded-xl border border-dashed border-[#cdd8d3] bg-[#f9fbfa] p-6 text-center">
+    <div className="text-sm font-extrabold">{title}</div>
+    <div className="mx-auto mt-2 max-w-md text-xs leading-5 text-[#718079]">{text}</div>
+    {action && <button onClick={onAction} className="btn-secondary mx-auto mt-4 text-xs">{action}<ChevronRight size={13} /></button>}
+  </div>;
+}
+
 export function EmptyPrompt({ title, text }: { title: string; text: string }) {
-  return <div className="rounded-xl border border-dashed border-[#cdd8d3] bg-[#f9fbfa] p-4"><div className="text-sm font-extrabold">{title}</div><div className="mt-1 text-xs leading-5 text-[#718079]">{text}</div><button className="mt-3 flex items-center gap-1 text-xs font-extrabold text-[#164c3a]">Take action <ChevronRight size={13} /></button></div>;
+  return <EmptyState title={title} text={text} action="Take action" />;
 }

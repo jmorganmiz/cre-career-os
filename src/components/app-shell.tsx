@@ -17,6 +17,7 @@ const nav = [
   { href: "/applications", label: "Applications", icon: BriefcaseBusiness },
   { href: "/opportunities", label: "Opportunities", icon: Radar },
   { href: "/research", label: "AI Research", icon: Sparkles },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -42,7 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="mt-auto">
           <div className="mb-3 rounded-2xl border border-white/10 bg-white/6 p-3"><div className="mb-2 flex items-center gap-2 text-xs font-bold"><span className="h-2 w-2 rounded-full bg-[#d6f276]" /> Weekly momentum</div><div className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full w-[68%] rounded-full bg-[#d6f276]" /></div><div className="mt-2 text-[11px] text-[#a8c0b7]">17 of 25 actions complete</div></div>
-          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-[#c2d4cd] hover:bg-white/8 hover:text-white"><Settings size={17} />Settings</button>
+
         </div>
       </aside>
       <main className="app-main ml-[232px] min-h-screen">
@@ -78,6 +79,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+
+
 
 
 
