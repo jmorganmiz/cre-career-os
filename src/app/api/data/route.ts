@@ -3,6 +3,13 @@ import { NextResponse } from "next/server";
 
 type Resource = "firms" | "contacts" | "applications";
 
+type SupabaseError = {
+  message?: string;
+  details?: string;
+  hint?: string;
+  code?: string;
+};
+
 const ownerId = process.env.APP_USER_ID || "00000000-0000-0000-0000-000000000001";
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -12,6 +19,15 @@ const optionalDateFields = new Set(["date_applied", "follow_up_at", "last_contac
 
 function unavailable() {
   return NextResponse.json({ configured: false, error: "Server Supabase sync is not configured." }, { status: 503 });
+}
+
+function errorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object") {
+    const value = error as SupabaseError;
+    return [value.message, value.details, value.hint, value.code].filter(Boolean).join(" | ") || fallback;
+  }
+  return fallback;
 }
 
 function cleanRecord(record: Record<string, unknown>) {
@@ -61,7 +77,8 @@ export async function GET() {
   try {
     return NextResponse.json(await loadData());
   } catch (error) {
-    return NextResponse.json({ configured: true, error: error instanceof Error ? error.message : "Could not load data." }, { status: 500 });
+    console.error("Data sync load failed", error);
+    return NextResponse.json({ configured: true, error: errorMessage(error, "Could not load data.") }, { status: 500 });
   }
 }
 
@@ -119,6 +136,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: "Unknown data action." }, { status: 400 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Data action failed." }, { status: 500 });
+    console.error("Data sync action failed", error);
+    return NextResponse.json({ error: errorMessage(error, "Data action failed.") }, { status: 500 });
   }
 }
