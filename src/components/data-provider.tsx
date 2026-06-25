@@ -6,8 +6,9 @@ import type { ActivityLog, Application, Contact, Firm, Notice, OpportunityRun, R
 
 type Resource = "firms" | "contacts" | "applications";
 type RecordMap = { firms: Firm; contacts: Contact; applications: Application };
+type SyncStatus = "checking" | "active" | "error";
 type DataContextValue = {
-  firms: Firm[]; contacts: Contact[]; applications: Application[]; opportunityRuns: OpportunityRun[]; researchRuns: ResearchRun[]; activityLog: ActivityLog[]; user: User | null; live: boolean; notice: Notice | null;
+  firms: Firm[]; contacts: Contact[]; applications: Application[]; opportunityRuns: OpportunityRun[]; researchRuns: ResearchRun[]; activityLog: ActivityLog[]; user: User | null; live: boolean; syncStatus: SyncStatus; notice: Notice | null;
   add: <K extends Resource>(resource: K, value: RecordMap[K]) => Promise<RecordMap[K]>;
   update: <K extends Resource>(resource: K, id: string, value: Partial<RecordMap[K]>) => Promise<RecordMap[K]>;
   remove: (resource: Resource, id?: string) => Promise<void>;
@@ -53,6 +54,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [live, setLive] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("checking");
 
   const showNotice = (message: string, tone: Notice["tone"] = "success") => {
     setNotice({ message, tone });
@@ -60,7 +62,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    fetch("/api/data").then(async (response) => {
+    fetch("/api/data", { cache: "no-store" }).then(async (response) => {
       const data = await response.json();
       if (!response.ok || !data.configured) throw new Error(data.error || "Automatic Supabase sync is not configured.");
       setFirms(data.firms || []);
@@ -70,8 +72,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setResearchRuns(data.researchRuns || []);
       setActivityLog(data.activityLog || []);
       setLive(true);
+      setSyncStatus("active");
     }).catch((error) => {
       setLive(false);
+      setSyncStatus("error");
       showNotice(`${error.message} Using demo/local data.`, "error");
     });
   }, []);
@@ -172,7 +176,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const authDisabled = async () => "Automatic Supabase sync is enabled. No sign-in required.";
   const signOut = async () => undefined;
 
-  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, researchRuns, activityLog, user: null, live, notice, add, update, remove, importMany, addOpportunityRun, addResearchRun, completeAction, clearNotice: () => setNotice(null), signIn: authDisabled, signUp: authDisabled, signOut }}>{children}</DataContext.Provider>;
+  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, researchRuns, activityLog, user: null, live, syncStatus, notice, add, update, remove, importMany, addOpportunityRun, addResearchRun, completeAction, clearNotice: () => setNotice(null), signIn: authDisabled, signUp: authDisabled, signOut }}>{children}</DataContext.Provider>;
 }
 
 export const useCareerData = () => {
@@ -180,3 +184,4 @@ export const useCareerData = () => {
   if (!value) throw new Error("useCareerData must be used inside DataProvider");
   return value;
 };
+

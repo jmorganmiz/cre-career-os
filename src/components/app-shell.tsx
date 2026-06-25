@@ -21,7 +21,9 @@ const nav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { live, notice, clearNotice } = useCareerData();
+  const { live, syncStatus, notice, clearNotice } = useCareerData();
+  const syncActive = live || syncStatus === "active";
+  const syncChecking = syncStatus === "checking";
   const [accountOpen, setAccountOpen] = useState(false);
 
   return (
@@ -50,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/firms#new" className="btn-primary text-sm"><Plus size={16} /> Add firm</Link>
             <button className="grid h-9 w-9 place-items-center rounded-lg border border-[#e4e9e6] bg-white text-[#66736e]"><Bell size={16} /></button>
             <button onClick={() => setAccountOpen(true)} className="ml-1 flex items-center gap-2 rounded-lg py-1 pl-1 pr-2 hover:bg-white">
-              <span className="relative grid h-8 w-8 place-items-center rounded-lg bg-[#d9efe7] text-xs font-extrabold text-[#164c3a]">JM<span className={`absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white ${live ? "bg-[#54a57f]" : "bg-[#d6a54c]"}`}/></span>
+              <span className="relative grid h-8 w-8 place-items-center rounded-lg bg-[#d9efe7] text-xs font-extrabold text-[#164c3a]">JM<span className={`absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white ${syncActive ? "bg-[#54a57f]" : "bg-[#d6a54c]"}`}/></span>
               <ChevronDown className="desktop-only text-[#7c8984]" size={14} />
             </button>
           </div>
@@ -59,12 +61,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       {accountOpen && <RecordModal title="Automatic sync" onClose={() => setAccountOpen(false)}>
         <div className="space-y-4">
-          <div className={`rounded-xl border p-4 ${live ? "border-[#cfe6db] bg-[#eef8f3]" : "border-[#f1d4a8] bg-[#fff8ed]"}`}>
+          <div className={`rounded-xl border p-4 ${syncActive ? "border-[#cfe6db] bg-[#eef8f3]" : "border-[#f1d4a8] bg-[#fff8ed]"}`}>
             <div className="flex items-start gap-3">
-              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${live ? "bg-[#d9efe7] text-[#164c3a]" : "bg-[#f8e7c7] text-[#8a6120]"}`}>{live ? <Database size={17}/> : <AlertTriangle size={17}/>}</span>
+              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${syncActive ? "bg-[#d9efe7] text-[#164c3a]" : "bg-[#f8e7c7] text-[#8a6120]"}`}>{syncActive ? <Database size={17}/> : <AlertTriangle size={17}/>}</span>
               <div>
-                <div className="text-sm font-extrabold">{live ? "Supabase sync is active" : "Supabase sync needs setup"}</div>
-                <p className="mt-2 text-xs leading-5 text-[#60706a]">{live ? "Every change saves through the server to your Supabase project. No sign-in is required." : "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel, then redeploy. Until then the app keeps using demo/local data."}</p>
+                <div className="text-sm font-extrabold">{syncActive ? "Supabase sync is active" : syncChecking ? "Checking Supabase sync" : "Supabase sync issue"}</div>
+                <p className="mt-2 text-xs leading-5 text-[#60706a]">{syncActive ? "Every change saves through the server to your Supabase project. No sign-in is required." : syncChecking ? "The browser is confirming the server connection. This should switch to active in a moment." : "The live API is configured, but this browser request did not finish. Hard refresh the page and try again."}</p>
               </div>
             </div>
           </div>
@@ -76,4 +78,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+
 

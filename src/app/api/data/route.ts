@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 type Resource = "firms" | "contacts" | "applications";
 
 type SupabaseError = {
@@ -162,4 +164,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: errorMessage(error, "Data action failed.") }, { status: 500 });
   }
 }
+
 
