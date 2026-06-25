@@ -98,6 +98,9 @@ Rules:
 - In next_step or risks, state what to verify about Spring/Summer 2027 eligibility.
 - Do not invent application URLs. If unsure, use the firm's careers page and say what to verify.
 - Favor roles likely suitable for a recent graduate or early-career candidate.
+- Quality gate: before returning each opportunity, reject it unless it passes at least 4 of these 6 checks: Spring/Summer 2027 timing is explicit or plausible, early-career/new-grad eligible, analytical work is likely, CRE/deal/capital allocation exposure is likely, source is credible, next action is clear.
+- Prefer direct company career pages over aggregator links when possible.
+- If a source is only a general careers page, make the role_title honest, and put the exact verification step in next_step.
 - Keep every opportunity specific and actionable.`;
 
   const result = await runOpenAIJsonAgent<OpportunityBrief>(prompt);
@@ -105,4 +108,5 @@ Rules:
   if (result.raw) return NextResponse.json({ ...fallback(input), search_summary: result.raw || fallback(input).search_summary, agent_error: result.detail, demo: false });
   return NextResponse.json(fallbackWithAgentError(input, result.status, result.detail));
 }
+
 

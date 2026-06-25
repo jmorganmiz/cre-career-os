@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2, ContactRound, LayoutDashboard, BriefcaseBusiness, Sparkles,
-  Search, Bell, Plus, Settings, ChevronDown, Radar, Database, AlertTriangle
+  Search, Bell, Plus, Settings, ChevronDown, Radar, Database, AlertTriangle, Bot
 } from "lucide-react";
 import { useState } from "react";
 import { useCareerData } from "@/components/data-provider";
@@ -16,6 +16,7 @@ const nav = [
   { href: "/contacts", label: "Contacts", icon: ContactRound },
   { href: "/applications", label: "Applications", icon: BriefcaseBusiness },
   { href: "/opportunities", label: "Opportunities", icon: Radar },
+  { href: "/coach", label: "Coach", icon: Bot },
   { href: "/research", label: "AI Research", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -79,6 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
 
 
 
