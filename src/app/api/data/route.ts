@@ -11,8 +11,30 @@ type SupabaseError = {
 };
 
 const ownerId = process.env.APP_USER_ID || "00000000-0000-0000-0000-000000000001";
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function normalizeSecret(value?: string) {
+  return value?.trim().replace(/^['"]|['"]$/g, "");
+}
+
+function normalizeSupabaseUrl(value?: string) {
+  const cleaned = normalizeSecret(value);
+  if (!cleaned) return undefined;
+  try {
+    const url = new URL(cleaned);
+    const dashboardMatch = url.pathname.match(/\/project\/([^/]+)/);
+    if (url.hostname === "supabase.com" && dashboardMatch?.[1]) {
+      return `https://${dashboardMatch[1]}.supabase.co`;
+    }
+    if (url.hostname.endsWith(".supabase.co")) {
+      return url.origin;
+    }
+  } catch {
+    return cleaned;
+  }
+  return cleaned;
+}
+
+const supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL);
+const serviceKey = normalizeSecret(process.env.SUPABASE_SERVICE_ROLE_KEY);
 const admin = supabaseUrl && serviceKey ? createClient(supabaseUrl, serviceKey) : null;
 const optionalUuidFields = new Set(["firm_id", "referral_contact_id"]);
 const optionalDateFields = new Set(["date_applied", "follow_up_at", "last_contacted_at"]);
@@ -140,3 +162,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: errorMessage(error, "Data action failed.") }, { status: 500 });
   }
 }
+
