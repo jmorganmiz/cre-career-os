@@ -11,7 +11,11 @@ type Opportunity = {
   role_title: string;
   city: string;
   category: string;
+  opportunity_type?: string;
   fit_score: number;
+  timing_score?: number;
+  source_quality_score?: number;
+  career_fit_score?: number;
   why_fit: string;
   source_url: string;
   source_title: string;
@@ -37,13 +41,13 @@ function followUpDateForFit(score: number) {
 
 function buildOpportunityNotes(opportunity: Opportunity, criteria: typeof defaultOpportunityCriteria) {
   return [
-    `${opportunity.firm_name} | Fit ${opportunity.fit_score}/100 | ${opportunity.why_fit}`,
+    `${opportunity.firm_name} | Fit ${opportunity.fit_score}/100 | Timing ${opportunity.timing_score ?? opportunity.fit_score}/100 | Source ${opportunity.source_quality_score ?? opportunity.fit_score}/100 | Career fit ${opportunity.career_fit_score ?? opportunity.fit_score}/100 | ${opportunity.why_fit}`,
     `Source: ${opportunity.source_title} (${opportunity.source_url})`,
     `Next step: ${opportunity.next_step}`,
     `Talking points: ${opportunity.talking_points?.join("; ") || "None returned"}`,
     `Risks: ${opportunity.risks?.join("; ") || "None returned"}`,
     `Target timing: ${criteria.target_timing}`,
-    `Search criteria: roles=${criteria.target_roles}; markets=${criteria.target_markets}; themes=${criteria.asset_classes}; company types=${criteria.company_types}`,
+    `Search criteria: type=${criteria.opportunity_type}; path=${criteria.career_path}; roles=${criteria.target_roles}; markets=${criteria.target_markets}; themes=${criteria.asset_classes}; company types=${criteria.company_types}`,
   ].join("\n");
 }
 
@@ -115,6 +119,8 @@ export default function OpportunitiesPage() {
           <p className="mt-2 text-xs leading-5 text-[#60706a]">{careerProfile.northStar}</p>
         </div>
         <div className="space-y-4">
+          <label className="block text-xs font-extrabold">Opportunity type<textarea className="input mt-2 min-h-16 text-sm leading-6" value={form.opportunity_type} onChange={(e)=>field("opportunity_type",e.target.value)}/></label>
+          <label className="block text-xs font-extrabold">Career path<textarea className="input mt-2 min-h-16 text-sm leading-6" value={form.career_path} onChange={(e)=>field("career_path",e.target.value)}/></label>
           <label className="block text-xs font-extrabold">Target roles<textarea className="input mt-2 min-h-20 text-sm leading-6" value={form.target_roles} onChange={(e)=>field("target_roles",e.target.value)}/></label>
           <label className="block text-xs font-extrabold">Target markets<textarea className="input mt-2 min-h-16 text-sm leading-6" value={form.target_markets} onChange={(e)=>field("target_markets",e.target.value)}/></label>
           <label className="block text-xs font-extrabold">Asset classes / themes<textarea className="input mt-2 min-h-16 text-sm leading-6" value={form.asset_classes} onChange={(e)=>field("asset_classes",e.target.value)}/></label>
@@ -161,6 +167,7 @@ export default function OpportunitiesPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-extrabold tracking-[-.02em]">{opportunity.role_title}</h2><Badge tone={opportunity.fit_score >= 85 ? "lime" : opportunity.fit_score >= 75 ? "green" : "gray"}>{opportunity.fit_score}/100 fit</Badge></div>
                     <div className="mt-1 text-sm font-bold text-[#66736d]">{opportunity.firm_name} | {opportunity.city} | {opportunity.category}</div>
+                    <div className="mt-3 flex flex-wrap gap-2"><Badge tone="gray">{opportunity.opportunity_type || "2027 early career"}</Badge><Badge tone="blue">Timing {opportunity.timing_score ?? opportunity.fit_score}</Badge><Badge tone="green">Source {opportunity.source_quality_score ?? opportunity.fit_score}</Badge><Badge tone="lime">Career {opportunity.career_fit_score ?? opportunity.fit_score}</Badge></div>
                   </div>
                   <div className="flex gap-2">
                     <a className="btn-secondary text-xs" href={opportunity.source_url} target="_blank" rel="noreferrer"><ExternalLink size={14}/>Source</a>

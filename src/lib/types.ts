@@ -19,7 +19,15 @@ export type OpportunityRun = {
   output: {
     search_summary?: string;
     strategy?: string[];
-    opportunities?: { firm_name?: string; role_title?: string; fit_score?: number }[];
+    opportunities?: {
+      firm_name?: string;
+      role_title?: string;
+      fit_score?: number;
+      timing_score?: number;
+      source_quality_score?: number;
+      career_fit_score?: number;
+      opportunity_type?: string;
+    }[];
     searches_to_run_next?: string[];
     demo?: boolean;
     agent_error?: string;

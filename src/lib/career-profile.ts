@@ -92,6 +92,8 @@ export const careerProfile = {
 };
 
 export const defaultOpportunityCriteria = {
+  opportunity_type: "2027 new graduate analyst role, rotational analyst program, or Summer 2027 internship",
+  career_path: "Acquisitions / Investments, Lending / Capital Markets, Development, PropTech / AI real estate",
   target_roles: careerProfile.targetRoles.join(", "),
   target_markets: [...careerProfile.targetLocations, ...careerProfile.secondaryLocations].join(", "),
   asset_classes: `Primary: ${careerProfile.preferredAssetClasses.primary.join(", ")}. Secondary: ${careerProfile.preferredAssetClasses.secondary.join(", ")}.`,

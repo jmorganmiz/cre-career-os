@@ -117,6 +117,9 @@ export default function Dashboard() {
             <Link href="/research" className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-white/15">
               <Sparkles size={16} /> Research a firm
             </Link>
+            <Link href="/plan" className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-white/15">
+              <CalendarDays size={16} /> Weekly plan
+            </Link>
           </div>
         </div>
         <div className="w-full max-w-[280px] rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
@@ -167,7 +170,7 @@ export default function Dashboard() {
         <div className="insight-card rounded-[18px] p-5">
           <div className="flex items-center gap-2 text-sm font-extrabold"><Lightbulb size={16} /> This week&apos;s insight</div>
           <p className="mt-3 text-sm leading-6 text-[#52645d]">Prioritize roles with analytical responsibility, deal exposure, mentorship, and a clear path toward multifamily investing or capital allocation.</p>
-          <Link href="/contacts" className="mt-4 inline-flex items-center gap-1 text-xs font-extrabold text-[#164c3a]">Find referral paths <ArrowRight size={13}/></Link>
+          <Link href="/plan" className="mt-4 inline-flex items-center gap-1 text-xs font-extrabold text-[#164c3a]">Open weekly plan <ArrowRight size={13}/></Link>
         </div>
         <div className="card p-5"><div className="mb-4 text-sm font-extrabold">Priority firms with no contacts</div><div className="space-y-3">{firms.filter(f => !contacts.some(c=>c.firm_id===f.id)).slice(0,3).map(f => <EmptyPrompt key={f.id ?? f.name} title={f.name} text={`${f.category || "Uncategorized"} | ${[f.city,f.state].filter(Boolean).join(", ") || "Location TBD"}`} />)}</div></div>
       </div>

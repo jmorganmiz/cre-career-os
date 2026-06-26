@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ExternalLink, LoaderCircle, Search, Send, UserRound, UsersRound } from "lucide-react";
 import { useCareerData } from "@/components/data-provider";
 import { Badge, PageHeader } from "@/components/ui";
@@ -35,6 +35,14 @@ export default function PeoplePage() {
   const [result, setResult] = useState<PeopleResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState<string[]>([]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const firm = new URLSearchParams(window.location.search).get("firm");
+      if (firm) setForm((current) => ({ ...current, firm_name: firm }));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const field = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
 

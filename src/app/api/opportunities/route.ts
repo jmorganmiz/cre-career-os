@@ -3,6 +3,8 @@ import { careerProfilePrompt } from "@/lib/career-profile";
 import { runOpenAIJsonAgent } from "@/lib/openai-agent";
 
 type OpportunityInput = {
+  opportunity_type?: string;
+  career_path?: string;
   target_roles?: string;
   target_markets?: string;
   asset_classes?: string;
@@ -28,6 +30,10 @@ const fallback = (input: OpportunityInput) => ({
       role_title: "2027 Capital Markets Analyst",
       city: "Bethesda, MD",
       category: "Lending",
+      opportunity_type: "2027 new graduate analyst role",
+      timing_score: 82,
+      source_quality_score: 90,
+      career_fit_score: 92,
       fit_score: 88,
       why_fit: "Strong match for lending, multifamily, capital markets, and early-career analytical exposure.",
       source_url: "https://www.walkerdunlop.com/careers/",
@@ -41,6 +47,10 @@ const fallback = (input: OpportunityInput) => ({
       role_title: "Summer 2027 Strategy & Operations Intern / New Grad Track",
       city: "New York, NY",
       category: "PropTech",
+      opportunity_type: "Summer 2027 internship / new graduate track",
+      timing_score: 78,
+      source_quality_score: 88,
+      career_fit_score: 85,
       fit_score: 82,
       why_fit: "Good bridge between CRE market knowledge, software workflows, data, and AI-related real estate strategy.",
       source_url: "https://www.vts.com/careers",
@@ -77,6 +87,8 @@ Find current, relevant job opportunities using web search. Focus on commercial r
 ${careerProfilePrompt()}
 
 User criteria:
+- Opportunity type: ${input.opportunity_type || "2027 new graduate analyst role, rotational analyst program, or Summer 2027 internship"}
+- Career path: ${input.career_path || "Acquisitions / Investments, Lending / Capital Markets, Development, PropTech / AI real estate"}
 - Target roles: ${input.target_roles || "CRE analyst, acquisitions analyst, asset management analyst, capital markets analyst, PropTech strategy, AI real estate"}
 - Target markets: ${input.target_markets || "United States, with preference for major CRE markets"}
 - Asset classes: ${input.asset_classes || "multifamily, commercial real estate"}
@@ -88,7 +100,7 @@ User criteria:
 Return only valid JSON with keys:
 search_summary: string,
 strategy: string[],
-opportunities: array of exactly 6 objects with keys firm_name, role_title, city, category, fit_score number 0-100, why_fit, source_url, source_title, next_step, talking_points string[], risks string[],
+opportunities: array of exactly 6 objects with keys firm_name, role_title, city, category, opportunity_type, fit_score number 0-100, timing_score number 0-100, source_quality_score number 0-100, career_fit_score number 0-100, why_fit, source_url, source_title, next_step, talking_points string[], risks string[],
 searches_to_run_next: string[].
 
 Rules:
