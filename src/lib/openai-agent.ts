@@ -1,4 +1,5 @@
 type OpenAIContent = {
+  type?: string;
   text?: string;
   content?: OpenAIContent[];
 };
@@ -6,11 +7,23 @@ type OpenAIContent = {
 type OpenAIResponseBody = {
   output_text?: string;
   output?: OpenAIContent[];
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    total_tokens?: number;
+  };
+};
+
+export type AgentUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  webSearchCalls: number;
 };
 
 type AgentJsonResult<T> =
-  | { ok: true; value: T; raw: string }
-  | { ok: false; status: number; detail: string; raw?: string };
+  | { ok: true; value: T; raw: string; usage: AgentUsage }
+  | { ok: false; status: number; detail: string; raw?: string; usage?: AgentUsage };
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 
@@ -63,15 +76,22 @@ export async function runOpenAIJsonAgent<T>(prompt: string): Promise<AgentJsonRe
 
   const data = (await response.json()) as OpenAIResponseBody;
   const raw = extractOutputText(data);
+  const usage: AgentUsage = {
+    inputTokens: data.usage?.input_tokens || 0,
+    outputTokens: data.usage?.output_tokens || 0,
+    totalTokens: data.usage?.total_tokens || 0,
+    webSearchCalls: data.output?.filter((item) => item.type === "web_search_call").length || 0,
+  };
 
   try {
-    return { ok: true, value: parseJsonFromText<T>(raw), raw };
+    return { ok: true, value: parseJsonFromText<T>(raw), raw, usage };
   } catch (error) {
     return {
       ok: false,
       status: 502,
       detail: error instanceof Error ? error.message : "OpenAI response could not be parsed.",
       raw,
+      usage,
     };
   }
 }

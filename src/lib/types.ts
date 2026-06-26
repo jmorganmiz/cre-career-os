@@ -35,6 +35,29 @@ export type OpportunityRun = {
   created_at?: string;
 };
 
+export type AutomationSettings = {
+  user_id?: string;
+  enabled: boolean;
+  monthly_limit_usd: number;
+  run_reserve_usd: number;
+  last_run_at?: string;
+  updated_at?: string;
+};
+
+export type AutomationRun = {
+  id?: string;
+  run_key: string;
+  status: "running" | "completed" | "failed" | "skipped";
+  reserved_cost_usd: number;
+  estimated_cost_usd: number;
+  input_tokens?: number;
+  output_tokens?: number;
+  web_search_calls?: number;
+  opportunity_count?: number;
+  error?: string;
+  created_at?: string;
+  completed_at?: string;
+};
 export type ResearchRun = {
   id?: string;
   firm_id?: string;
