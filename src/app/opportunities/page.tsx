@@ -5,6 +5,7 @@ import { ArrowUpRight, BriefcaseBusiness, Check, ExternalLink, History, LoaderCi
 import { useCareerData } from "@/components/data-provider";
 import { Badge, PageHeader } from "@/components/ui";
 import { careerProfile, defaultOpportunityCriteria } from "@/lib/career-profile";
+import type { Application, Firm } from "@/lib/types";
 
 type Opportunity = {
   firm_name: string;
@@ -51,12 +52,54 @@ function buildOpportunityNotes(opportunity: Opportunity, criteria: typeof defaul
   ].join("\n");
 }
 
+function normalizedText(value?: string) {
+  return (value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function normalizedUrl(value?: string) {
+  if (!value?.trim()) return "";
+  try {
+    const url = new URL(value.trim());
+    url.hash = "";
+    for (const key of [...url.searchParams.keys()]) {
+      if (key.toLowerCase().startsWith("utm_") || key.toLowerCase() === "ref") url.searchParams.delete(key);
+    }
+    return url.toString().replace(/\/$/, "").toLowerCase();
+  } catch {
+    return value.trim().replace(/\/$/, "").toLowerCase();
+  }
+}
+
+function isGenericCareersUrl(value?: string) {
+  const url = normalizedUrl(value);
+  if (!url) return true;
+  try {
+    const path = new URL(url).pathname.replace(/\/$/, "");
+    return /\/(careers?|jobs?|opportunities)$/i.test(path);
+  } catch {
+    return false;
+  }
+}
+
+function isOpportunitySaved(opportunity: Opportunity, applications: Application[], firms: Firm[]) {
+  const firm = firms.find((item) => normalizedText(item.name) === normalizedText(opportunity.firm_name));
+  const role = normalizedText(opportunity.role_title);
+  const url = normalizedUrl(opportunity.source_url);
+  return applications.some((application) => {
+    const sameRoleAtFirm = Boolean(firm?.id && application.firm_id === firm.id && normalizedText(application.role_title) === role);
+    const sameSpecificUrl = Boolean(url && !isGenericCareersUrl(url) && normalizedUrl(application.job_url) === url);
+    return sameRoleAtFirm || sameSpecificUrl;
+  });
+}
+
 export default function OpportunitiesPage() {
-  const { firms, opportunityRuns, add, addOpportunityRun } = useCareerData();
+  const { firms, applications, opportunityRuns, add, addOpportunityRun } = useCareerData();
   const [form, setForm] = useState(defaultOpportunityCriteria);
   const [brief, setBrief] = useState<OpportunityBrief | null>(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState<string[]>([]);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState("");
 
   const field = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -82,28 +125,42 @@ export default function OpportunitiesPage() {
   };
 
   const saveOpportunity = async (opportunity: Opportunity) => {
-    const firmName = opportunity.firm_name.trim();
-    const existingFirm = firms.find((firm) => firm.name.toLowerCase() === firmName.toLowerCase());
-    const linkedFirm = existingFirm || await add("firms", {
-      name: firmName,
-      city: opportunity.city,
-      category: opportunity.category,
-      priority: opportunity.fit_score >= 85 ? "Tier 1" : "Tier 2",
-      careers_url: opportunity.source_url,
-      why_interested: opportunity.why_fit,
-    });
+    const key = `${opportunity.firm_name}-${opportunity.role_title}`;
+    if (isOpportunitySaved(opportunity, applications, firms)) {
+      setSaved((current) => current.includes(key) ? current : [...current, key]);
+      return;
+    }
 
-    await add("applications", {
-      firm_id: linkedFirm.id,
-      role_title: opportunity.role_title,
-      city: opportunity.city,
-      job_url: opportunity.source_url,
-      status: "Saved",
-      interview_stage: `Opportunity found | ${opportunity.fit_score}/100 fit`,
-      follow_up_at: followUpDateForFit(opportunity.fit_score),
-      notes: buildOpportunityNotes(opportunity, form),
-    });
-    setSaved((current) => [...current, `${opportunity.firm_name}-${opportunity.role_title}`]);
+    setSaving(key);
+    setSaveError("");
+    try {
+      const firmName = opportunity.firm_name.trim();
+      const existingFirm = firms.find((firm) => normalizedText(firm.name) === normalizedText(firmName));
+      const linkedFirm = existingFirm || await add("firms", {
+        name: firmName,
+        city: opportunity.city,
+        category: opportunity.category,
+        priority: opportunity.fit_score >= 85 ? "Tier 1" : "Tier 2",
+        careers_url: opportunity.source_url,
+        why_interested: opportunity.why_fit,
+      });
+
+      await add("applications", {
+        firm_id: linkedFirm.id,
+        role_title: opportunity.role_title,
+        city: opportunity.city,
+        job_url: opportunity.source_url,
+        status: "Saved",
+        interview_stage: `Opportunity found | ${opportunity.fit_score}/100 fit`,
+        follow_up_at: followUpDateForFit(opportunity.fit_score),
+        notes: buildOpportunityNotes(opportunity, form),
+      });
+      setSaved((current) => current.includes(key) ? current : [...current, key]);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "The opportunity could not be saved to Supabase.");
+    } finally {
+      setSaving(null);
+    }
   };
 
   return <>
@@ -158,10 +215,13 @@ export default function OpportunitiesPage() {
             </div>}
           </div>
 
+          {saveError && <div className="rounded-xl border border-[#f1d4a8] bg-[#fff8ed] px-4 py-3 text-xs font-bold text-[#8a6120]">Save failed: {saveError}</div>}
+
           <div className="grid gap-4">
             {brief.opportunities?.length ? brief.opportunities.map((opportunity) => {
               const key = `${opportunity.firm_name}-${opportunity.role_title}`;
-              const isSaved = saved.includes(key);
+              const isSaved = saved.includes(key) || isOpportunitySaved(opportunity, applications, firms);
+              const isSaving = saving === key;
               return <div key={key} className="card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -171,7 +231,7 @@ export default function OpportunitiesPage() {
                   </div>
                   <div className="flex gap-2">
                     <a className="btn-secondary text-xs" href={opportunity.source_url} target="_blank" rel="noreferrer"><ExternalLink size={14}/>Source</a>
-                    <button onClick={()=>saveOpportunity(opportunity)} disabled={isSaved} className="btn-primary text-xs">{isSaved ? <Check size={14}/> : <Save size={14}/>} {isSaved ? "Saved" : "Save"}</button>
+                    <button onClick={()=>saveOpportunity(opportunity)} disabled={isSaved || isSaving} className="btn-primary text-xs">{isSaving ? <LoaderCircle className="animate-spin" size={14}/> : isSaved ? <Check size={14}/> : <Save size={14}/>} {isSaving ? "Saving" : isSaved ? "Saved" : "Save"}</button>
                   </div>
                 </div>
                 <p className="mt-4 text-sm leading-6 text-[#5f6d67]">{opportunity.why_fit}</p>

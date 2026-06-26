@@ -82,14 +82,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const add: DataContextValue["add"] = async (resource, value) => {
     try {
-      const { data } = await postData({ action: "add", resource, value });
-      if (resource === "firms") setFirms((x) => [data as Firm, ...x]);
-      if (resource === "contacts") setContacts((x) => [data as Contact, ...x]);
-      if (resource === "applications") setApplications((x) => [data as Application, ...x]);
-      showNotice("Saved to Supabase.");
+      const { data, duplicate } = await postData({ action: "add", resource, value });
+      if (resource === "firms") setFirms((x) => duplicate || x.some((item) => item.id === data.id) ? x : [data as Firm, ...x]);
+      if (resource === "contacts") setContacts((x) => duplicate || x.some((item) => item.id === data.id) ? x : [data as Contact, ...x]);
+      if (resource === "applications") setApplications((x) => duplicate || x.some((item) => item.id === data.id) ? x : [data as Application, ...x]);
+      showNotice(duplicate ? "Already saved. Existing record kept." : "Saved to Supabase.");
       return data as RecordMap[typeof resource];
     } catch (error) {
-      showNotice(error instanceof Error ? error.message : "Saved locally only.", "error");
+      showNotice(error instanceof Error ? error.message : "Save failed.", "error");
+      if (syncStatus !== "error") throw error;
       const item = { ...value, id: crypto.randomUUID() };
       if (resource === "firms") setFirms((x) => [item as Firm, ...x]);
       if (resource === "contacts") setContacts((x) => [item as Contact, ...x]);

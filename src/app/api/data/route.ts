@@ -71,6 +71,57 @@ function cleanRecord(record: Record<string, unknown>) {
   return cleaned;
 }
 
+function normalizedText(value: unknown) {
+  return typeof value === "string" ? value.trim().toLowerCase().replace(/\s+/g, " ") : "";
+}
+
+function normalizedUrl(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value.trim());
+    url.hash = "";
+    for (const key of [...url.searchParams.keys()]) {
+      if (key.toLowerCase().startsWith("utm_") || key.toLowerCase() === "ref") url.searchParams.delete(key);
+    }
+    return url.toString().replace(/\/$/, "").toLowerCase();
+  } catch {
+    return value.trim().replace(/\/$/, "").toLowerCase();
+  }
+}
+
+function isGenericCareersUrl(value: unknown) {
+  const url = normalizedUrl(value);
+  if (!url) return true;
+  try {
+    const path = new URL(url).pathname.replace(/\/$/, "");
+    return /\/(careers?|jobs?|opportunities)$/i.test(path);
+  } catch {
+    return false;
+  }
+}
+
+async function findExisting(resource: Resource, value: Record<string, unknown>) {
+  if (!admin) return null;
+  if (resource === "firms") {
+    const { data, error } = await admin.from("firms").select("*").eq("user_id", ownerId);
+    if (error) throw error;
+    return data?.find((firm) => normalizedText(firm.name) === normalizedText(value.name)) || null;
+  }
+  if (resource === "applications") {
+    const { data, error } = await admin.from("applications").select("*").eq("user_id", ownerId);
+    if (error) throw error;
+    const incomingUrl = normalizedUrl(value.job_url);
+    const incomingRole = normalizedText(value.role_title);
+    return data?.find((application) => {
+      const sameUrl = incomingUrl && !isGenericCareersUrl(incomingUrl) && normalizedUrl(application.job_url) === incomingUrl;
+      const sameRoleAtFirm = incomingRole === normalizedText(application.role_title)
+        && (application.firm_id || null) === (value.firm_id || null);
+      return Boolean(sameUrl || sameRoleAtFirm);
+    }) || null;
+  }
+  return null;
+}
+
 async function loadData() {
   if (!admin) return null;
   const [firms, contacts, applications, opportunityRuns, researchRuns, activityLog] = await Promise.all([
@@ -113,9 +164,12 @@ export async function POST(request: Request) {
   try {
     if (body.action === "add") {
       const resource = body.resource as Resource;
-      const { data, error } = await admin.from(resource).insert({ ...cleanRecord(body.value), user_id: ownerId }).select().single();
+      const value = cleanRecord(body.value);
+      const existing = await findExisting(resource, value);
+      if (existing) return NextResponse.json({ data: existing, duplicate: true });
+      const { data, error } = await admin.from(resource).insert({ ...value, user_id: ownerId }).select().single();
       if (error) throw error;
-      return NextResponse.json({ data });
+      return NextResponse.json({ data, duplicate: false });
     }
 
     if (body.action === "update") {

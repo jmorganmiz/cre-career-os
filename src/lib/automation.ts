@@ -33,8 +33,31 @@ function estimateCost(usage?: AgentUsage) {
   return Number((usage.inputTokens / 1_000_000 * inputRate + usage.outputTokens / 1_000_000 * outputRate + usage.webSearchCalls * webSearchRate).toFixed(4));
 }
 
-function opportunityKey(opportunity: { firm_name?: string; role_title?: string }) {
-  return `${opportunity.firm_name || ""}|${opportunity.role_title || ""}`.trim().toLowerCase();
+function normalizedText(value?: string) {
+  return (value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function specificSourceUrl(value?: string) {
+  if (!value?.trim()) return "";
+  try {
+    const url = new URL(value.trim());
+    url.hash = "";
+    for (const key of [...url.searchParams.keys()]) {
+      if (key.toLowerCase().startsWith("utm_") || key.toLowerCase() === "ref") url.searchParams.delete(key);
+    }
+    const path = url.pathname.replace(/\/$/, "");
+    if (/\/(careers?|jobs?|opportunities)$/i.test(path)) return "";
+    return url.toString().replace(/\/$/, "").toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function opportunityKeys(opportunity: { firm_name?: string; role_title?: string; source_url?: string }) {
+  const keys = [`role:${normalizedText(opportunity.firm_name)}|${normalizedText(opportunity.role_title)}`];
+  const source = specificSourceUrl(opportunity.source_url);
+  if (source) keys.push(`url:${source}`);
+  return keys;
 }
 
 async function ensureSettings() {
@@ -132,9 +155,14 @@ export async function executeWeeklyAutomation(manual = false) {
     if (priorError) throw priorError;
     const priorKeys = new Set((priorRuns || []).flatMap((prior) => {
       const output = prior.output as OpportunityRun["output"];
-      return (output.opportunities || []).map(opportunityKey);
+      return (output.opportunities || []).flatMap((opportunity) => opportunityKeys(opportunity));
     }));
-    const opportunities = (result.brief.opportunities || []).filter((opportunity) => !priorKeys.has(opportunityKey(opportunity)));
+    const opportunities = (result.brief.opportunities || []).filter((opportunity) => {
+      const keys = opportunityKeys(opportunity);
+      const duplicate = keys.some((key) => priorKeys.has(key));
+      keys.forEach((key) => priorKeys.add(key));
+      return !duplicate;
+    });
     const brief = {
       ...result.brief,
       opportunities,

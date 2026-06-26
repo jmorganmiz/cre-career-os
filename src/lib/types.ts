@@ -27,6 +27,7 @@ export type OpportunityRun = {
       source_quality_score?: number;
       career_fit_score?: number;
       opportunity_type?: string;
+      source_url?: string;
     }[];
     searches_to_run_next?: string[];
     demo?: boolean;
