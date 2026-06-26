@@ -102,7 +102,6 @@ export default function SettingsPage() {
     { label: "Research runs", value: researchRuns.length, Icon: KeyRound },
     { label: "Completed actions", value: activityLog.length, Icon: Settings },
   ];
-  const currentWeekRun = automation?.runs.some((run) => run.run_key === automation.currentRunKey);
   const budgetPercent = automation ? Math.min(100, automation.budget.reserved / automation.budget.limit * 100) : 0;
 
   return <>
@@ -132,9 +131,9 @@ export default function SettingsPage() {
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-        <div className="text-xs leading-5 text-[#60706a]">Each run reserves $7 against the limit. Estimated API usage this month: <strong>${automation?.budget.estimated.toFixed(4) ?? "0.0000"}</strong>. Provider billing remains the source of truth.</div>
-        <button className="btn-primary text-xs" disabled={!automation || Boolean(actionLoading) || currentWeekRun} onClick={() => automationAction("runNow")}>
-          {actionLoading === "run" ? <LoaderCircle className="animate-spin" size={15}/> : <Play size={15}/>} {currentWeekRun ? "This week completed" : "Run now"}
+        <div className="text-xs leading-5 text-[#60706a]">Only scheduled runs reserve $7 against the limit. Manual Run now and Opportunity Finder searches are uncapped. Estimated API usage this month: <strong>${automation?.budget.estimated.toFixed(4) ?? "0.0000"}</strong>. Provider billing remains the source of truth.</div>
+        <button className="btn-primary text-xs" disabled={!automation || Boolean(actionLoading)} onClick={() => automationAction("runNow")}>
+          {actionLoading === "run" ? <LoaderCircle className="animate-spin" size={15}/> : <Play size={15}/>} Run now
         </button>
       </div>
 
@@ -142,7 +141,7 @@ export default function SettingsPage() {
         <div className="mb-3 text-xs font-extrabold text-[#33423c]">Recent automated runs</div>
         <div className="divide-y divide-[#e4e9e6]">
           {automation.runs.slice(0, 5).map((run) => <div key={run.id || run.run_key} className="flex flex-wrap items-center justify-between gap-3 py-3 text-xs">
-            <div><span className="font-extrabold text-[#33423c]">{run.run_key}</span><span className="ml-2 text-[#718079]">{run.opportunity_count ?? 0} new roles</span></div>
+            <div><span className="font-extrabold text-[#33423c]">{run.run_key.includes("-manual-") ? "Manual search" : run.run_key}</span><span className="ml-2 text-[#718079]">{run.opportunity_count ?? 0} new roles</span></div>
             <div className="flex items-center gap-3"><span className="text-[#718079]">${Number(run.estimated_cost_usd || 0).toFixed(4)} estimated</span><Badge tone={run.status === "completed" ? "green" : run.status === "failed" ? "amber" : "gray"}>{runLabel(run.status)}</Badge></div>
           </div>)}
         </div>

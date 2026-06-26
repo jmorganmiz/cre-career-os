@@ -128,21 +128,23 @@ export async function executeWeeklyAutomation(manual = false) {
   const settings = await ensureSettings();
   if (!settings.enabled && !manual) return { status: "disabled" as const };
 
-  const runKey = isoWeekKey();
-  const { data: existing, error: existingError } = await admin.from("automation_runs").select("*").eq("user_id", ownerId).eq("run_key", runKey).maybeSingle();
-  if (existingError) throw existingError;
-  if (existing) return { status: "duplicate" as const, run: existing as AutomationRun };
+  const runKey = manual ? `${isoWeekKey()}-manual-${Date.now()}` : isoWeekKey();
+  if (!manual) {
+    const { data: existing, error: existingError } = await admin.from("automation_runs").select("*").eq("user_id", ownerId).eq("run_key", runKey).maybeSingle();
+    if (existingError) throw existingError;
+    if (existing) return { status: "duplicate" as const, run: existing as AutomationRun };
 
-  const { data: monthRuns, error: monthError } = await admin.from("automation_runs").select("reserved_cost_usd").eq("user_id", ownerId).gte("created_at", monthStart());
-  if (monthError) throw monthError;
-  const reserved = (monthRuns || []).reduce((sum, run) => sum + numberValue(run.reserved_cost_usd), 0);
-  if (reserved + RUN_RESERVE_USD > MONTHLY_LIMIT_USD) return { status: "budget_exhausted" as const };
+    const { data: monthRuns, error: monthError } = await admin.from("automation_runs").select("reserved_cost_usd").eq("user_id", ownerId).gte("created_at", monthStart());
+    if (monthError) throw monthError;
+    const reserved = (monthRuns || []).reduce((sum, run) => sum + numberValue(run.reserved_cost_usd), 0);
+    if (reserved + RUN_RESERVE_USD > MONTHLY_LIMIT_USD) return { status: "budget_exhausted" as const };
+  }
 
   const { data: run, error: insertError } = await admin.from("automation_runs").insert({
     user_id: ownerId,
     run_key: runKey,
     status: "running",
-    reserved_cost_usd: RUN_RESERVE_USD,
+    reserved_cost_usd: manual ? 0 : RUN_RESERVE_USD,
   }).select().single();
   if (insertError?.code === "23505") return { status: "duplicate" as const };
   if (insertError) throw insertError;
@@ -173,7 +175,7 @@ export async function executeWeeklyAutomation(manual = false) {
 
     const { error: saveError } = await admin.from("opportunity_runs").insert({
       user_id: ownerId,
-      input: { ...defaultOpportunityCriteria, automation: "weekly" },
+      input: { ...defaultOpportunityCriteria, automation: manual ? "manual" : "weekly" },
       output: brief,
     });
     if (saveError) throw saveError;
