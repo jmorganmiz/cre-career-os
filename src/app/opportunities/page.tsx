@@ -204,7 +204,7 @@ export default function OpportunitiesPage() {
         {loading ? <div className="card grid min-h-[460px] place-items-center p-8 text-center">
           <div><LoaderCircle className="mx-auto animate-spin text-[#164c3a]" size={30}/><div className="mt-4 text-sm font-extrabold">Searching the market...</div><div className="mt-1 text-xs text-[#7a8781]">The agent is scanning roles, career pages, and fit signals.</div></div>
         </div> : !brief ? <div className="card grid min-h-[460px] place-items-center p-8 text-center">
-          <div><Target className="mx-auto text-[#77a392]" size={30}/><div className="mt-4 text-sm font-extrabold">Describe what you want</div><div className="mt-1 max-w-sm text-xs leading-5 text-[#7a8781]">The agent will return Spring/Summer 2027 roles with fit scores, risks, next steps, and source links.</div></div>
+          <div><Target className="mx-auto text-[#77a392]" size={30}/><div className="mt-4 text-sm font-extrabold">Describe what you want</div><div className="mt-1 max-w-sm text-xs leading-5 text-[#7a8781]">The agent will return full-time roles starting in Spring/Summer 2027 with fit scores, risks, next steps, and source links.</div></div>
         </div> : <div className="space-y-4">
           <div className="card p-5">
             <div className="mb-2 flex items-center gap-2 text-sm font-extrabold"><Sparkles size={16} className="text-[#164c3a]"/> Search summary</div>

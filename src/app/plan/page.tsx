@@ -21,10 +21,10 @@ export default function WeeklyPlanPage() {
   const savedRoles = applications.filter((application) => ["Saved", "Networking"].includes(application.status || "Saved")).slice(0, 6);
   const searches = [
     '"2027 analyst" multifamily acquisitions Dallas careers',
-    '"Summer 2027" commercial real estate internship capital markets',
+    '"2027 new grad" commercial real estate capital markets full-time',
     '"2027 new grad" "forward deployed engineer" OR "forward deployed strategist"',
-    '"Summer 2027" "strategy and operations" OR "corporate strategy" internship',
-    '"Summer 2027" PropTech strategy OR solutions engineering internship',
+    '"2027 new grad" "strategy and operations" OR "corporate strategy" full-time',
+    '"2027 new grad" PropTech strategy OR solutions engineering full-time',
   ];
   const firmName = (firmId?: string) => firms.find((firm) => firm.id === firmId)?.name || "No firm linked";
 
@@ -41,7 +41,7 @@ export default function WeeklyPlanPage() {
 
     <section className="grid gap-6 xl:grid-cols-2">
       <div className="card overflow-hidden">
-        <div className="border-b border-[#e4e9e6] p-5"><div className="flex items-center gap-2 text-sm font-extrabold"><Search size={16} className="text-[#164c3a]"/>Run five focused searches</div><p className="mt-1 text-xs text-[#7a8781]">Verify every role is for Spring or Summer 2027 before saving it.</p></div>
+        <div className="border-b border-[#e4e9e6] p-5"><div className="flex items-center gap-2 text-sm font-extrabold"><Search size={16} className="text-[#164c3a]"/>Run five focused searches</div><p className="mt-1 text-xs text-[#7a8781]">Verify every role is full-time with a Spring or Summer 2027 start before saving it.</p></div>
         <div className="divide-y divide-[#edf0ee]">{searches.map((query, index) => <a key={query} href={googleSearch(query)} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-5 py-4 hover:bg-[#fafbfa]"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#eef4f1] text-xs font-extrabold text-[#164c3a]">{index + 1}</span><span className="min-w-0 flex-1 text-xs font-bold leading-5 text-[#52645d]">{query}</span><ArrowUpRight size={14} className="text-[#89948f]"/></a>)}</div>
       </div>
 

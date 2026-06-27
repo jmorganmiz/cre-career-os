@@ -18,7 +18,7 @@ export type OpportunityBrief = ReturnType<typeof fallback>;
 const fallback = (input: OpportunityInput) => ({
   search_summary: "Add OPENAI_API_KEY on Vercel to enable live opportunity discovery with web search. This demo output shows the format the agent will use.",
   strategy: [
-    "Prioritize Spring 2027 or Summer 2027 starts only: 2027 new graduate programs, analyst roles, Forward Deployed roles, strategy roles, and Summer 2027 internships/early-career programs.",
+    "Prioritize full-time roles starting in Spring 2027 or Summer 2027 only: new graduate programs, analyst roles, Forward Deployed roles, strategy roles, solutions roles, and permanent early-career positions.",
     "Prioritize roles that combine CRE fundamentals with capital markets, asset management, acquisitions, PropTech, or AI/data exposure.",
     "Use warm-network paths before applying cold, especially at firms already in your target list.",
     "Track promising roles as Saved first, then move to Networking once you find a contact.",
@@ -43,10 +43,10 @@ const fallback = (input: OpportunityInput) => ({
     },
     {
       firm_name: "VTS",
-      role_title: "Summer 2027 Strategy & Operations Intern / New Grad Track",
+      role_title: "2027 Strategy & Operations Associate",
       city: "New York, NY",
       category: "PropTech",
-      opportunity_type: "Summer 2027 internship / new graduate track",
+      opportunity_type: "Full-time 2027 new graduate strategy role",
       timing_score: 78,
       source_quality_score: 88,
       career_fit_score: 85,
@@ -75,6 +75,22 @@ function fallbackWithAgentError(input: OpportunityInput, status: number, detail:
   };
 }
 
+function enforceFullTimeOnly(brief: OpportunityBrief): OpportunityBrief {
+  const excludedPattern = /\b(intern|internship|summer analyst|co-?op|part[- ]time|temporary|student program)\b/i;
+  const opportunities = brief.opportunities.filter((opportunity) => {
+    const classification = `${opportunity.role_title} ${opportunity.opportunity_type}`;
+    return !excludedPattern.test(classification);
+  });
+  const removed = brief.opportunities.length - opportunities.length;
+  return {
+    ...brief,
+    opportunities,
+    search_summary: removed > 0
+      ? `${brief.search_summary} ${removed} non-full-time role(s) were removed.`
+      : brief.search_summary,
+  };
+}
+
 export async function runOpportunitySearch(input: OpportunityInput) {
   if (!process.env.OPENAI_API_KEY) return { brief: fallback(input) };
 
@@ -85,7 +101,7 @@ Find current, relevant job opportunities using web search. Focus on commercial r
 ${careerProfilePrompt()}
 
 User criteria:
-- Opportunity type: ${input.opportunity_type || "2027 new graduate role, analyst or rotational program, Forward Deployed role, strategy role, or Summer 2027 internship"}
+- Opportunity type: ${input.opportunity_type || "full-time 2027 new graduate role, analyst or rotational program, Forward Deployed role, strategy role, or solutions role"}
 - Career path: ${input.career_path || "Acquisitions / Investments, Lending / Capital Markets, Development, PropTech / AI real estate"}
 - Target roles: ${input.target_roles || "CRE analyst, acquisitions analyst, asset management analyst, capital markets analyst, Forward Deployed Engineer, Forward Deployed Strategist, solutions engineer, strategy and operations, PropTech strategy, AI real estate"}
 - Target markets: ${input.target_markets || "United States, with preference for major CRE markets"}
@@ -103,12 +119,12 @@ searches_to_run_next: string[].
 
 Rules:
 - Prefer live career pages, reputable job pages, or company pages as sources.
-- Only return jobs, internships, analyst programs, or early-career programs that are explicitly or plausibly for Spring 2027 or Summer 2027 starts.
-- Exclude Summer 2026 internships, immediate-start 2026 roles, experienced-only roles, and roles that clearly require graduation before 2027.
+- Only return full-time, permanent jobs or full-time new-graduate/rotational programs that are explicitly or plausibly for Spring 2027 or Summer 2027 starts.
+- Exclude all internships, Summer Analyst internships, co-ops, temporary roles, part-time roles, student programs, immediate-start 2026 roles, experienced-only roles, and roles that clearly require graduation before 2027.
 - In next_step or risks, state what to verify about Spring/Summer 2027 eligibility.
 - Do not invent application URLs. If unsure, use the firm's careers page and say what to verify.
 - Favor roles likely suitable for a recent graduate or early-career candidate.
-- Quality gate: reject an opportunity unless Spring/Summer 2027 timing is explicit or plausible, it is early-career/new-grad eligible, the source is credible, the next action is clear, and the work offers either CRE/deal/capital allocation exposure or applied AI/customer deployment/technical strategy exposure.
+- Quality gate: reject an opportunity unless it is full-time and permanent, Spring/Summer 2027 timing is explicit or plausible, it is early-career/new-grad eligible, the source is credible, the next action is clear, and the work offers either CRE/deal/capital allocation exposure or applied AI/customer deployment/technical strategy exposure.
 - For Forward Deployed Engineer roles, distinguish software-engineering-heavy positions from Forward Deployed Strategist, solutions engineering, implementation, and technical strategy roles. Penalize or reject roles that clearly require a computer science/engineering degree or substantial production software engineering experience the candidate does not have.
 - Reward roles that combine technical problem solving, customer discovery, implementation, analytics, strategy, communication, and ownership.
 - Prefer direct company career pages over aggregator links when possible.
@@ -116,7 +132,7 @@ Rules:
 - Keep every opportunity specific and actionable.`;
 
   const result = await runOpenAIJsonAgent<OpportunityBrief>(prompt);
-  if (result.ok) return { brief: result.value, usage: result.usage };
+  if (result.ok) return { brief: enforceFullTimeOnly(result.value), usage: result.usage };
   if (result.raw) return {
     brief: { ...fallback(input), search_summary: result.raw || fallback(input).search_summary, agent_error: result.detail, demo: false },
     usage: result.usage,

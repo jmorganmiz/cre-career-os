@@ -96,14 +96,14 @@ export const careerProfile = {
 };
 
 export const defaultOpportunityCriteria = {
-  opportunity_type: "2027 new graduate role, analyst or rotational program, Forward Deployed role, strategy role, or Summer 2027 internship",
+  opportunity_type: "Full-time 2027 new graduate role, analyst or rotational program, Forward Deployed role, strategy role, or solutions role",
   career_path: "Acquisitions / Investments, Lending / Capital Markets, Development, PropTech / AI real estate, Forward Deployed Engineering / AI Solutions, Forward Deployed Strategy, Strategy & Operations",
   target_roles: careerProfile.targetRoles.join(", "),
   target_markets: [...careerProfile.targetLocations, ...careerProfile.secondaryLocations].join(", "),
   asset_classes: `Primary: ${careerProfile.preferredAssetClasses.primary.join(", ")}. Secondary: ${careerProfile.preferredAssetClasses.secondary.join(", ")}.`,
   company_types: careerProfile.companyTypes.join(", "),
-  target_timing: "Spring 2027 or Summer 2027 starts only. Prioritize 2027 new graduate programs, analyst roles, Forward Deployed roles, strategy roles, and Summer 2027 internships/early-career programs. Exclude Summer 2026 internships and roles requiring an immediate 2026 start.",
-  must_haves: "Spring/Summer 2027 timing, early-career friendly, analytical or technical responsibility, exposure to deals, capital allocation, applied AI delivery, customer problem solving, or strategic execution, strong mentorship, strong culture, learning curve, relationship-building upside.",
+  target_timing: "Full-time roles starting in Spring 2027 or Summer 2027 only. Prioritize 2027 new graduate programs, analyst roles, Forward Deployed roles, strategy roles, and other permanent early-career positions. Exclude every internship, Summer Analyst internship, co-op, temporary role, part-time role, student program, and immediate 2026 start.",
+  must_haves: "Full-time permanent employment, Spring/Summer 2027 timing, early-career friendly, analytical or technical responsibility, exposure to deals, capital allocation, applied AI delivery, customer problem solving, or strategic execution, strong mentorship, strong culture, learning curve, relationship-building upside.",
   avoid: careerProfile.dealBreakers.join(", "),
 };
 
