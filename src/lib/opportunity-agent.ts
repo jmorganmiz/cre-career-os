@@ -18,7 +18,7 @@ export type OpportunityBrief = ReturnType<typeof fallback>;
 const fallback = (input: OpportunityInput) => ({
   search_summary: "Add OPENAI_API_KEY on Vercel to enable live opportunity discovery with web search. This demo output shows the format the agent will use.",
   strategy: [
-    "Prioritize Spring 2027 or Summer 2027 starts only: 2027 new graduate analyst programs, 2027 analyst roles, and summer 2027 internships/early-career programs.",
+    "Prioritize Spring 2027 or Summer 2027 starts only: 2027 new graduate programs, analyst roles, Forward Deployed roles, strategy roles, and Summer 2027 internships/early-career programs.",
     "Prioritize roles that combine CRE fundamentals with capital markets, asset management, acquisitions, PropTech, or AI/data exposure.",
     "Use warm-network paths before applying cold, especially at firms already in your target list.",
     "Track promising roles as Saved first, then move to Networking once you find a contact.",
@@ -80,17 +80,17 @@ export async function runOpportunitySearch(input: OpportunityInput) {
 
   const prompt = `You are an opportunity finder for Jack Morgan's post-grad commercial real estate job search.
 
-Find current, relevant job opportunities using web search. Focus on commercial real estate, multifamily, lending, PropTech, and AI/data-related real estate roles.
+Find current, relevant job opportunities using web search. Focus on commercial real estate, multifamily, lending, PropTech, applied AI, Forward Deployed Engineering, Forward Deployed Strategy, solutions engineering, and strategy/operations roles.
 
 ${careerProfilePrompt()}
 
 User criteria:
-- Opportunity type: ${input.opportunity_type || "2027 new graduate analyst role, rotational analyst program, or Summer 2027 internship"}
+- Opportunity type: ${input.opportunity_type || "2027 new graduate role, analyst or rotational program, Forward Deployed role, strategy role, or Summer 2027 internship"}
 - Career path: ${input.career_path || "Acquisitions / Investments, Lending / Capital Markets, Development, PropTech / AI real estate"}
-- Target roles: ${input.target_roles || "CRE analyst, acquisitions analyst, asset management analyst, capital markets analyst, PropTech strategy, AI real estate"}
+- Target roles: ${input.target_roles || "CRE analyst, acquisitions analyst, asset management analyst, capital markets analyst, Forward Deployed Engineer, Forward Deployed Strategist, solutions engineer, strategy and operations, PropTech strategy, AI real estate"}
 - Target markets: ${input.target_markets || "United States, with preference for major CRE markets"}
 - Asset classes: ${input.asset_classes || "multifamily, commercial real estate"}
-- Company types: ${input.company_types || "owners, operators, lenders, brokerages, PropTech, real estate AI companies"}
+- Company types: ${input.company_types || "owners, operators, lenders, brokerages, PropTech, real estate AI companies, applied AI companies, enterprise software companies"}
 - Target timing: ${input.target_timing || "Spring 2027 or Summer 2027 starts only; exclude Summer 2026 and immediate 2026 starts"}
 - Must haves: ${input.must_haves || "early-career friendly, strong learning environment"}
 - Avoid: ${input.avoid || "unclear fit or outdated postings"}
@@ -108,7 +108,9 @@ Rules:
 - In next_step or risks, state what to verify about Spring/Summer 2027 eligibility.
 - Do not invent application URLs. If unsure, use the firm's careers page and say what to verify.
 - Favor roles likely suitable for a recent graduate or early-career candidate.
-- Quality gate: before returning each opportunity, reject it unless it passes at least 4 of these 6 checks: Spring/Summer 2027 timing is explicit or plausible, early-career/new-grad eligible, analytical work is likely, CRE/deal/capital allocation exposure is likely, source is credible, next action is clear.
+- Quality gate: reject an opportunity unless Spring/Summer 2027 timing is explicit or plausible, it is early-career/new-grad eligible, the source is credible, the next action is clear, and the work offers either CRE/deal/capital allocation exposure or applied AI/customer deployment/technical strategy exposure.
+- For Forward Deployed Engineer roles, distinguish software-engineering-heavy positions from Forward Deployed Strategist, solutions engineering, implementation, and technical strategy roles. Penalize or reject roles that clearly require a computer science/engineering degree or substantial production software engineering experience the candidate does not have.
+- Reward roles that combine technical problem solving, customer discovery, implementation, analytics, strategy, communication, and ownership.
 - Prefer direct company career pages over aggregator links when possible.
 - If a source is only a general careers page, make the role_title honest, and put the exact verification step in next_step.
 - Keep every opportunity specific and actionable.`;

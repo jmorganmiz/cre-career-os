@@ -22,9 +22,9 @@ export default function WeeklyPlanPage() {
   const searches = [
     '"2027 analyst" multifamily acquisitions Dallas careers',
     '"Summer 2027" commercial real estate internship capital markets',
-    '"2027 new graduate" real estate analyst Charlotte OR Charleston',
-    '"Summer 2027" PropTech strategy internship real estate',
-    'site:linkedin.com/jobs "2027" real estate analyst lending',
+    '"2027 new grad" "forward deployed engineer" OR "forward deployed strategist"',
+    '"Summer 2027" "strategy and operations" OR "corporate strategy" internship',
+    '"Summer 2027" PropTech strategy OR solutions engineering internship',
   ];
   const firmName = (firmId?: string) => firms.find((firm) => firm.id === firmId)?.name || "No firm linked";
 

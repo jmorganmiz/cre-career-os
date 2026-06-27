@@ -12,12 +12,14 @@ export const careerProfile = {
     "Asset Management Analyst", "Capital Markets Analyst", "Debt Analyst", "Agency Lending Analyst",
     "Mortgage Banking Analyst", "Real Estate Analyst", "Strategy Analyst", "Corporate Strategy Analyst",
     "Competitive Intelligence Analyst", "Business Intelligence Analyst", "AI Strategy Analyst",
-    "PropTech Analyst", "Solutions Consultant",
+    "PropTech Analyst", "Forward Deployed Engineer", "Forward Deployed Strategist",
+    "Solutions Engineer", "AI Implementation Strategist", "Strategy & Operations Analyst", "Solutions Consultant",
   ],
   targetIndustries: [
     "Multifamily Real Estate", "Commercial Real Estate", "Real Estate Private Equity",
     "Real Estate Lending", "Capital Markets", "Development", "PropTech",
-    "AI-Enabled Businesses", "Corporate Strategy", "Business Intelligence",
+    "AI-Enabled Businesses", "Applied AI Software", "Enterprise Technology",
+    "Corporate Strategy", "Strategy & Operations", "Business Intelligence",
   ],
   preferredAssetClasses: {
     primary: ["Multifamily"],
@@ -86,20 +88,22 @@ export const careerProfile = {
     "Development",
     "Real Estate Technology / PropTech",
     "AI + Real Estate Strategy",
+    "Forward Deployed Engineering / AI Solutions",
+    "Forward Deployed Strategy / Strategy & Operations",
     "Corporate Strategy / Competitive Intelligence",
   ],
   northStar: "Become the person who consistently has better information, makes better decisions, and allocates capital better than competitors.",
 };
 
 export const defaultOpportunityCriteria = {
-  opportunity_type: "2027 new graduate analyst role, rotational analyst program, or Summer 2027 internship",
-  career_path: "Acquisitions / Investments, Lending / Capital Markets, Development, PropTech / AI real estate",
+  opportunity_type: "2027 new graduate role, analyst or rotational program, Forward Deployed role, strategy role, or Summer 2027 internship",
+  career_path: "Acquisitions / Investments, Lending / Capital Markets, Development, PropTech / AI real estate, Forward Deployed Engineering / AI Solutions, Forward Deployed Strategy, Strategy & Operations",
   target_roles: careerProfile.targetRoles.join(", "),
   target_markets: [...careerProfile.targetLocations, ...careerProfile.secondaryLocations].join(", "),
   asset_classes: `Primary: ${careerProfile.preferredAssetClasses.primary.join(", ")}. Secondary: ${careerProfile.preferredAssetClasses.secondary.join(", ")}.`,
   company_types: careerProfile.companyTypes.join(", "),
-  target_timing: "Spring 2027 or Summer 2027 starts only. Prioritize 2027 new graduate analyst programs, 2027 analyst roles, and summer 2027 internships/early-career programs. Exclude Summer 2026 internships and roles requiring an immediate 2026 start.",
-  must_haves: "Spring/Summer 2027 timing, early-career friendly, analytical responsibility, exposure to deals or capital allocation, strong mentorship, strong culture, learning curve, relationship-building upside.",
+  target_timing: "Spring 2027 or Summer 2027 starts only. Prioritize 2027 new graduate programs, analyst roles, Forward Deployed roles, strategy roles, and Summer 2027 internships/early-career programs. Exclude Summer 2026 internships and roles requiring an immediate 2026 start.",
+  must_haves: "Spring/Summer 2027 timing, early-career friendly, analytical or technical responsibility, exposure to deals, capital allocation, applied AI delivery, customer problem solving, or strategic execution, strong mentorship, strong culture, learning curve, relationship-building upside.",
   avoid: careerProfile.dealBreakers.join(", "),
 };
 
