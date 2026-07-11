@@ -89,3 +89,14 @@ export type Notice = {
   tone: "success" | "error";
   message: string;
 };
+
+export type AutomationResult = {
+  id: string;
+  job_type: string;
+  title: string;
+  summary?: string;
+  payload: Record<string, unknown>;
+  status: "new" | "saved" | "dismissed";
+  created_at?: string;
+  reviewed_at?: string;
+};

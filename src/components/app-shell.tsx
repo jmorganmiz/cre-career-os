@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2, ContactRound, LayoutDashboard, BriefcaseBusiness, Sparkles,
-  Search, Bell, Plus, Settings, ChevronDown, Radar, Database, AlertTriangle, Bot, UsersRound, CalendarCheck2
+  Search, Bell, Plus, Settings, ChevronDown, Radar, Database, AlertTriangle, Bot, UsersRound, CalendarCheck2, Inbox
 } from "lucide-react";
 import { useState } from "react";
 import { useCareerData } from "@/components/data-provider";
@@ -17,6 +17,7 @@ const nav = [
   { href: "/people", label: "People Finder", icon: UsersRound },
   { href: "/applications", label: "Applications", icon: BriefcaseBusiness },
   { href: "/opportunities", label: "Opportunities", icon: Radar },
+  { href: "/inbox", label: "Automation Inbox", icon: Inbox },
   { href: "/plan", label: "Weekly Plan", icon: CalendarCheck2 },
   { href: "/coach", label: "Coach", icon: Bot },
   { href: "/research", label: "AI Research", icon: Sparkles },
