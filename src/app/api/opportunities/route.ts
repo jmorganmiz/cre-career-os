@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth";
+import { requirePrivateDeployment } from "@/lib/private-deployment";
 import { runOpportunitySearch, type OpportunityInput } from "@/lib/opportunity-agent";
 
 export async function POST(request: Request) {
-  const auth = await requireAuthenticatedUser();
-  if (auth.response) return auth.response;
+  const privateDeployment = requirePrivateDeployment();
+  if (privateDeployment) return privateDeployment;
 
   const input = await request.json() as OpportunityInput;
   const result = await runOpportunitySearch(input);

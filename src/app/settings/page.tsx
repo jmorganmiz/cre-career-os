@@ -9,6 +9,7 @@ import type { AutomationRun, AutomationSettings } from "@/lib/types";
 type Health = {
   supabase?: { configured: boolean; urlHost: string | null };
   openai?: { configured: boolean; model: string };
+  privateAccess?: { configured: boolean; ownerConfigured: boolean; ownerSuffix: string | null };
 };
 
 type AutomationSnapshot = {
@@ -152,6 +153,7 @@ export default function SettingsPage() {
       <div className="space-y-4">
         <StatusRow label="Supabase sync" ok={live || syncStatus === "active"} detail={live ? `Server sync is active${health?.supabase?.urlHost ? ` through ${health.supabase.urlHost}` : ""}.` : syncStatus === "checking" ? "The browser is checking the server connection." : "The browser could not confirm the server connection."} />
         <StatusRow label="Supabase server env" ok={Boolean(health?.supabase?.configured)} detail={health?.supabase?.configured ? "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are present in Vercel." : "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel Production."} />
+        <StatusRow label="Private access" ok={Boolean(health?.privateAccess?.configured && health?.privateAccess?.ownerConfigured)} detail={health?.privateAccess?.configured && health?.privateAccess?.ownerConfigured ? `Access key is configured. Owner id ends in ${health.privateAccess.ownerSuffix}.` : "Set CAREEROS_ACCESS_KEY and CAREEROS_OWNER_ID in Vercel."} />
         <StatusRow label="OpenAI agent env" ok={Boolean(health?.openai?.configured)} detail={health?.openai?.configured ? `OPENAI_API_KEY is present. Model: ${health?.openai?.model}.` : "Add OPENAI_API_KEY in Vercel Production for live research and opportunity search."} />
       </div>
       <div className="card h-fit p-5">

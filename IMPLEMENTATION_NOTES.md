@@ -1,83 +1,52 @@
-# CareerOS Automation Inbox - Phase 1
+# CareerOS Private Single-User Mode
+
+CareerOS now runs as a private single-user app with a lightweight access-key cookie. It does not use a CareerOS login page, Supabase Auth callback, email allowlist, browser session checks, or Vercel SSO as the normal access path.
 
 Implemented:
 
-- Daily Vercel cron at `0 14 * * *` calling `/api/automation/run`.
-- New `automation_results` Supabase table and RLS policy.
-- Daily opportunity runs write each new role into the Automation Inbox.
-- New `/inbox` page with:
-  - Open official source
-  - Dismiss
-  - Save to pipeline
-- Saving an inbox item:
-  - Finds or creates the firm
-  - Adds the role to Applications with status `Saved`
-  - Sets interview stage to `Prospect`
-  - Avoids duplicate firms and obvious duplicate applications
-- Updated Settings language from weekly to daily automation.
+- Removed app-level Supabase Auth routes and login/logout UI.
+- Added `/access`, where the private key is entered once per browser.
+- Added an HttpOnly `careeros_access` cookie that lasts 180 days.
+- Added `CAREEROS_ACCESS_KEY` as the server-side private access key.
+- Added `CAREEROS_OWNER_ID` as the single server-side owner id.
+- Scoped all service-role reads and writes to `CAREEROS_OWNER_ID`.
+- Kept `SUPABASE_SERVICE_ROLE_KEY` server-side only.
+- Kept `/api/automation/run` protected by `Authorization: Bearer $CRON_SECRET` and exempt from the browser access cookie.
+- Added fail-closed behavior when `CAREEROS_ACCESS_KEY` is absent.
+- Preserved the Phase 1 Automation Inbox behavior: dismiss, save, firm linking/creation, and duplicate application protection.
 
-Deployment steps:
+Required Production configuration:
 
-1. Run `supabase/automation.sql` in the Supabase SQL Editor.
-2. Configure Supabase Auth for either Google OAuth or email magic links.
-3. Confirm Vercel has `CRON_SECRET`, `CRON_USER_ID`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `CAREEROS_ALLOWED_EMAILS`.
-4. Sign in once so your Supabase Auth user exists.
-5. Run `supabase/transfer_legacy_owner_to_auth_user.sql` after replacing `REPLACE_WITH_SUPABASE_AUTH_USER_ID` with your real Supabase Auth user id.
-6. Deploy this branch/repo to Vercel.
-7. In Settings, enable daily automation.
-8. Click **Run now** once, then open **Automation Inbox**.
-
-Supabase Auth setup:
-
-- Production env vars required:
+- Disable Vercel SSO Deployment Protection for the normal production URL if you want direct access without Vercel sign-in.
+- Set `CAREEROS_ACCESS_KEY` to a strong private phrase or random token.
+- Set `CAREEROS_OWNER_ID=00356437-063c-49a9-98a6-961f5d7b6eae`.
+- Keep these server-side env vars configured:
   - `SUPABASE_URL`
   - `SUPABASE_SERVICE_ROLE_KEY`
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - `CAREEROS_ALLOWED_EMAILS`
   - `OPENAI_API_KEY`
   - `CRON_SECRET`
-  - `CRON_USER_ID`
-- Supabase Auth redirect URLs should include:
-  - `https://cre-career-os.vercel.app/auth/callback`
-  - The active Preview deployment callback URL when validating a branch, for example `https://cre-career-igybil13x-jmorganmizs-projects.vercel.app/auth/callback`
-- `CAREEROS_ALLOWED_EMAILS` is a comma-separated allowlist. Authenticated users outside this list receive `403`.
-- `CRON_USER_ID` should be set to the authenticated Supabase user id that owns CareerOS rows after the owner migration.
 
-Preview validation completed on `https://cre-career-igybil13x-jmorganmizs-projects.vercel.app`:
+Data ownership:
 
-- `/login`: `200 OK`
-- Unauthenticated `/inbox`: `307` to `/login?next=%2Finbox`
-- Unauthenticated `/api/automation/inbox`: `401 Unauthorized`
-- Authenticated `/api/data`: `configured=true`, 29 firms, 39 applications
-- Authenticated `/api/automation/inbox`: 8 results
-- Authenticated `/inbox`: `200 OK`
-- `POST /api/auth/logout`: `200 OK`, `{"ok":true}`
-- Wells Fargo Saved / Prospect application remains exactly one
+- Do not roll back the previous owner migration.
+- Do not reassign or duplicate existing rows.
+- The existing production owner id is `00356437-063c-49a9-98a6-961f5d7b6eae`, which owns the current 29 firms, 39 applications, and 8 inbox results.
+- Rollback for this PR is code/env only: redeploy the previous app version and remove `CAREEROS_OWNER_ID` / `CAREEROS_ACCESS_KEY` if no longer needed. No database rollback is required.
 
-Owner migration counts:
+Validation checklist:
 
-- Before migration:
-  - Legacy owner: 29 firms, 39 applications, 8 inbox results
-  - Authenticated user: 0 firms, 0 applications, 0 inbox results
-  - Wells Fargo Saved / Prospect applications: 1
-- After migration:
-  - Legacy owner: 0 firms, 0 applications, 0 inbox results
-  - Authenticated user: 29 firms, 39 applications, 8 inbox results
-  - Wells Fargo Saved / Prospect applications: 1
-- The original 28 firms / 38 applications baseline became 29 / 39 after Phase 1 live validation created the Wells Fargo firm and Saved / Prospect application.
-
-Owner migration rollback:
-
-- Run the same update statements from `supabase/transfer_legacy_owner_to_auth_user.sql` in reverse inside a transaction.
-- Set `user_id` back to `00000000-0000-0000-0000-000000000001` where `user_id` equals the real Supabase Auth user id.
-- Verify counts before and after rollback.
+- Public `/inbox` redirects to `/access` when the cookie is absent.
+- Public `/api/automation/inbox` returns `401` when the cookie is absent.
+- Entering the access key sets the cookie and redirects to the requested page.
+- `/inbox` loads 8 automation results after access.
+- Firms remains 29.
+- Applications remains 39.
+- Wells Fargo remains exactly one `Saved` / `Prospect` application.
+- Cron still authenticates with `CRON_SECRET` and writes to `CAREEROS_OWNER_ID` without an interactive browser cookie.
+- `tsc --noEmit`, `npm run lint`, and `npm run build` pass.
 
 Notes:
 
 - Vercel cron uses UTC. `14:00 UTC` is 9:00 AM Central during daylight saving time and 8:00 AM Central during standard time.
-- Supabase Auth protects application routes. API routes that read or mutate user data return `401` without a valid session.
-- The Automation Inbox API still uses the Supabase service-role key server-side, but every query is scoped to the authenticated Supabase user id.
-- The cron route continues to use `Authorization: Bearer $CRON_SECRET` plus `CRON_USER_ID`; it does not require an interactive browser session.
-- Rollback for the owner migration: run the update statements in `supabase/transfer_legacy_owner_to_auth_user.sql` in reverse, setting `user_id` back to `00000000-0000-0000-0000-000000000001` for the same target user id.
-- This phase covers daily opportunity results only. Weekly networking additions, company dossiers, Friday review, and Sunday digest should reuse the same `automation_results` inbox model in Phase 2.
+- Anyone with the private access key can open CareerOS, so store it like a password.
+- This change does not start the networking inbox or any later automation phases.

@@ -1,12 +1,11 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-
-function clean(value?: string) {
-  return value?.trim().replace(/^['"]|['"]$/g, "");
-}
+import { ACCESS_COOKIE_NAME, accessHash, getAccessKey, safeInternalPath } from "@/lib/private-access";
 
 function isPublicPath(pathname: string) {
-  return pathname === "/login" || pathname.startsWith("/auth/callback") || pathname.startsWith("/_next") || pathname === "/favicon.ico";
+  return pathname.startsWith("/_next")
+    || pathname === "/favicon.ico"
+    || pathname === "/access"
+    || pathname === "/api/access";
 }
 
 function isCronRequest(request: NextRequest) {
@@ -14,51 +13,29 @@ function isCronRequest(request: NextRequest) {
   return Boolean(secret && request.nextUrl.pathname === "/api/automation/run" && request.headers.get("authorization") === `Bearer ${secret}`);
 }
 
-function isAllowedEmail(email?: string | null) {
-  const allowed = process.env.CAREEROS_ALLOWED_EMAILS;
-  if (!allowed) return false;
-  const normalized = (email || "").trim().toLowerCase();
-  return allowed.split(",").map((value) => value.trim().toLowerCase()).filter(Boolean).includes(normalized);
+function privateAccessUnavailable(pathname: string) {
+  const message = "CareerOS private access is not configured. Set CAREEROS_ACCESS_KEY before deploying without Vercel SSO.";
+  if (pathname.startsWith("/api/")) return NextResponse.json({ error: message }, { status: 503 });
+  return new NextResponse(message, { status: 503 });
 }
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  if (isPublicPath(pathname) || isCronRequest(request)) return NextResponse.next();
+  if (isPublicPath(pathname)) return NextResponse.next();
+  if (isCronRequest(request)) return NextResponse.next();
 
-  const supabaseUrl = clean(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL);
-  const supabaseAnonKey = clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  if (!supabaseUrl || !supabaseAnonKey) {
-    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Supabase auth is not configured." }, { status: 503 });
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+  const accessKey = getAccessKey();
+  if (!accessKey) return privateAccessUnavailable(pathname);
 
-  let response = NextResponse.next({ request });
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-      },
-    },
-  });
+  const expected = await accessHash(accessKey);
+  const actual = request.cookies.get(ACCESS_COOKIE_NAME)?.value;
+  if (actual === expected) return NextResponse.next();
 
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) {
-    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-  if (!isAllowedEmail(data.user.email)) {
-    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-    return NextResponse.redirect(new URL("/login?error=unauthorized", request.url));
-  }
+  if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Private access required." }, { status: 401 });
 
-  return response;
+  const accessUrl = new URL("/access", request.url);
+  accessUrl.searchParams.set("next", safeInternalPath(`${pathname}${request.nextUrl.search}`));
+  return NextResponse.redirect(accessUrl);
 }
 
 export const config = {
