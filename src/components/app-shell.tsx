@@ -28,6 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { live, syncStatus, notice, clearNotice } = useCareerData();
   const [accountOpen, setAccountOpen] = useState(false);
+  if (pathname === "/access") return <>{children}</>;
 
   const syncActive = live || syncStatus === "active";
   const syncChecking = syncStatus === "checking";
@@ -77,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="rounded-xl bg-[#f7f9f8] p-4 text-xs leading-5 text-[#60706a]">
-            Access is controlled by Vercel Deployment Protection. Server reads and writes are scoped to CAREEROS_OWNER_ID.
+            Access is controlled by the private CareerOS access key. Server reads and writes are scoped to CAREEROS_OWNER_ID.
           </div>
         </div>
       </RecordModal>}

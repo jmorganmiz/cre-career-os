@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { privateDeploymentAcknowledged } from "@/lib/server-supabase";
+import { accessConfigured } from "@/lib/private-access";
 
 export function requirePrivateDeployment() {
-  if (privateDeploymentAcknowledged()) return null;
+  if (accessConfigured()) return null;
   return NextResponse.json(
-    { error: "CareerOS private deployment is not enabled. Enable Vercel Deployment Protection and set CAREEROS_PRIVATE_DEPLOYMENT_ACK=true." },
-    { status: 403 },
+    { error: "CareerOS private access is not configured. Set CAREEROS_ACCESS_KEY before deploying without Vercel SSO." },
+    { status: 503 },
   );
 }
 

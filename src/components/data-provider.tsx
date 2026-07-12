@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { ActivityLog, Application, Contact, Firm, Notice, OpportunityRun, ResearchRun } from "@/lib/types";
 
 type Resource = "firms" | "contacts" | "applications";
@@ -45,6 +46,8 @@ async function postData(body: Record<string, unknown>) {
 }
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const accessPage = pathname === "/access";
   const [firms, setFirms] = useState<Firm[]>(demoFirms);
   const [contacts, setContacts] = useState<Contact[]>(demoContacts);
   const [applications, setApplications] = useState<Application[]>(demoApplications);
@@ -61,6 +64,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    if (accessPage) return;
+
     fetch("/api/data", { cache: "no-store" }).then(async (response) => {
       const data = await response.json();
       if (!response.ok || !data.configured) throw new Error(data.error || "Automatic Supabase sync is not configured.");
@@ -77,7 +82,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setSyncStatus("error");
       showNotice(`${error.message} Using demo/local data.`, "error");
     });
-  }, []);
+  }, [accessPage]);
 
   const add: DataContextValue["add"] = async (resource, value) => {
     try {
@@ -173,10 +178,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     catch (error) { showNotice(error instanceof Error ? error.message : "Action completion saved locally only.", "error"); }
   };
 
-  const authDisabled = async () => "Access is controlled by Vercel Deployment Protection.";
+  const authDisabled = async () => "Access is controlled by the private CareerOS access key.";
   const signOut = async () => undefined;
 
-  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, researchRuns, activityLog, user: null, live, syncStatus, notice, add, update, remove, importMany, addOpportunityRun, addResearchRun, completeAction, clearNotice: () => setNotice(null), signIn: authDisabled, signUp: authDisabled, signOut }}>{children}</DataContext.Provider>;
+  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, researchRuns, activityLog, user: null, live: accessPage ? false : live, syncStatus: accessPage ? "checking" : syncStatus, notice, add, update, remove, importMany, addOpportunityRun, addResearchRun, completeAction, clearNotice: () => setNotice(null), signIn: authDisabled, signUp: authDisabled, signOut }}>{children}</DataContext.Provider>;
 }
 
 export const useCareerData = () => {

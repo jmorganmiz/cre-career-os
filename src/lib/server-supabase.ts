@@ -32,7 +32,3 @@ export function getOwnerId() {
   if (!ownerId || !UUID_PATTERN.test(ownerId)) throw new Error("CAREEROS_OWNER_ID is not configured.");
   return ownerId;
 }
-
-export function privateDeploymentAcknowledged() {
-  return normalizeSecret(process.env.CAREEROS_PRIVATE_DEPLOYMENT_ACK)?.toLowerCase() === "true";
-}
