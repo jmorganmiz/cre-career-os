@@ -1,6 +1,6 @@
 import { defaultOpportunityCriteria } from "@/lib/career-profile";
 import { runOpportunitySearch } from "@/lib/opportunity-agent";
-import { getServerSupabase, ownerId } from "@/lib/server-supabase";
+import { getServerSupabase } from "@/lib/server-supabase";
 import type { AgentUsage } from "@/lib/openai-agent";
 import type { AutomationRun, AutomationSettings, OpportunityRun } from "@/lib/types";
 
@@ -55,16 +55,16 @@ function opportunityKeys(opportunity: { firm_name?: string; role_title?: string;
   return keys;
 }
 
-async function ensureSettings() {
+async function ensureSettings(userId: string) {
   const admin = getServerSupabase();
   if (!admin) throw new Error("Supabase server sync is not configured.");
 
-  const { data: existing, error: readError } = await admin.from("automation_settings").select("*").eq("user_id", ownerId).maybeSingle();
+  const { data: existing, error: readError } = await admin.from("automation_settings").select("*").eq("user_id", userId).maybeSingle();
   if (readError) throw readError;
   if (existing) return existing as AutomationSettings;
 
   const { data, error } = await admin.from("automation_settings").insert({
-    user_id: ownerId,
+    user_id: userId,
     enabled: false,
     monthly_limit_usd: MONTHLY_LIMIT_USD,
     run_reserve_usd: RUN_RESERVE_USD,
@@ -73,12 +73,12 @@ async function ensureSettings() {
   return data as AutomationSettings;
 }
 
-export async function getAutomationSnapshot() {
+export async function getAutomationSnapshot(userId: string) {
   const admin = getServerSupabase();
   if (!admin) throw new Error("Supabase server sync is not configured.");
-  const settings = await ensureSettings();
+  const settings = await ensureSettings(userId);
 
-  const { data, error } = await admin.from("automation_runs").select("*").eq("user_id", ownerId).order("created_at", { ascending: false }).limit(12);
+  const { data, error } = await admin.from("automation_runs").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(12);
   if (error) throw error;
   const runs = (data || []) as AutomationRun[];
   const reservedThisMonth = runs
@@ -102,41 +102,41 @@ export async function getAutomationSnapshot() {
   };
 }
 
-export async function setAutomationEnabled(enabled: boolean) {
+export async function setAutomationEnabled(userId: string, enabled: boolean) {
   const admin = getServerSupabase();
   if (!admin) throw new Error("Supabase server sync is not configured.");
   const { error } = await admin.from("automation_settings").upsert({
-    user_id: ownerId,
+    user_id: userId,
     enabled,
     monthly_limit_usd: MONTHLY_LIMIT_USD,
     run_reserve_usd: RUN_RESERVE_USD,
   }, { onConflict: "user_id" });
   if (error) throw error;
-  return getAutomationSnapshot();
+  return getAutomationSnapshot(userId);
 }
 
-export async function executeWeeklyAutomation(manual = false) {
+export async function executeWeeklyAutomation(userId: string, manual = false) {
   const admin = getServerSupabase();
   if (!admin) throw new Error("Supabase server sync is not configured.");
   if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured.");
 
-  const settings = await ensureSettings();
+  const settings = await ensureSettings(userId);
   if (!settings.enabled && !manual) return { status: "disabled" as const };
 
   const runKey = manual ? `${isoDateKey()}-manual-${Date.now()}` : isoDateKey();
   if (!manual) {
-    const { data: existing, error: existingError } = await admin.from("automation_runs").select("*").eq("user_id", ownerId).eq("run_key", runKey).maybeSingle();
+    const { data: existing, error: existingError } = await admin.from("automation_runs").select("*").eq("user_id", userId).eq("run_key", runKey).maybeSingle();
     if (existingError) throw existingError;
     if (existing) return { status: "duplicate" as const, run: existing as AutomationRun };
 
-    const { data: monthRuns, error: monthError } = await admin.from("automation_runs").select("reserved_cost_usd").eq("user_id", ownerId).gte("created_at", monthStart());
+    const { data: monthRuns, error: monthError } = await admin.from("automation_runs").select("reserved_cost_usd").eq("user_id", userId).gte("created_at", monthStart());
     if (monthError) throw monthError;
     const reserved = (monthRuns || []).reduce((sum, run) => sum + numberValue(run.reserved_cost_usd), 0);
     if (reserved + RUN_RESERVE_USD > MONTHLY_LIMIT_USD) return { status: "budget_exhausted" as const };
   }
 
   const { data: run, error: insertError } = await admin.from("automation_runs").insert({
-    user_id: ownerId,
+    user_id: userId,
     run_key: runKey,
     status: "running",
     reserved_cost_usd: manual ? 0 : RUN_RESERVE_USD,
@@ -148,7 +148,7 @@ export async function executeWeeklyAutomation(manual = false) {
     const result = await runOpportunitySearch(defaultOpportunityCriteria);
     if ("agent_error" in result.brief && result.brief.agent_error) throw new Error(result.brief.agent_error);
 
-    const { data: priorRuns, error: priorError } = await admin.from("opportunity_runs").select("output").eq("user_id", ownerId).order("created_at", { ascending: false }).limit(12);
+    const { data: priorRuns, error: priorError } = await admin.from("opportunity_runs").select("output").eq("user_id", userId).order("created_at", { ascending: false }).limit(12);
     if (priorError) throw priorError;
     const priorKeys = new Set((priorRuns || []).flatMap((prior) => {
       const output = prior.output as OpportunityRun["output"];
@@ -169,7 +169,7 @@ export async function executeWeeklyAutomation(manual = false) {
     };
 
     const { error: saveError } = await admin.from("opportunity_runs").insert({
-      user_id: ownerId,
+      user_id: userId,
       input: { ...defaultOpportunityCriteria, automation: manual ? "manual" : "daily" },
       output: brief,
     });
@@ -177,7 +177,7 @@ export async function executeWeeklyAutomation(manual = false) {
 
     if (opportunities.length) {
       const inboxRows = opportunities.map((opportunity) => ({
-        user_id: ownerId,
+        user_id: userId,
         job_type: "daily_opportunities",
         run_id: run.id,
         title: `${opportunity.firm_name || "Unknown firm"} - ${opportunity.role_title || "Opportunity"}`,
@@ -202,7 +202,7 @@ export async function executeWeeklyAutomation(manual = false) {
     }).eq("id", run.id).select().single();
     if (updateError) throw updateError;
 
-    await admin.from("automation_settings").update({ last_run_at: completedAt }).eq("user_id", ownerId);
+    await admin.from("automation_settings").update({ last_run_at: completedAt }).eq("user_id", userId);
     return { status: "completed" as const, run: completed as AutomationRun, brief };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Automated opportunity search failed.";
