@@ -4,11 +4,17 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { LoaderCircle, LogIn, Mail } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/auth-client";
+import { safeInternalPath } from "@/lib/safe-redirect";
 
 function LoginContent() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/";
+  const next = safeInternalPath(searchParams.get("next"));
   const error = searchParams.get("error");
+  const errorMessage = error === "unauthorized"
+    ? "This account is not authorized for CareerOS."
+    : error === "auth_callback"
+      ? "Sign-in could not be completed. Try the magic link again."
+      : "";
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState<"google" | "email" | "">("");
@@ -81,7 +87,7 @@ function LoginContent() {
           </button>
         </form>
 
-        {(message || error === "unauthorized") && <div className="mt-5 rounded-lg border border-[#dfe6e2] bg-[#f7f9f8] px-4 py-3 text-xs leading-5 text-[#52645d]">{message || "This account is not authorized for CareerOS."}</div>}
+        {(message || errorMessage) && <div className="mt-5 rounded-lg border border-[#dfe6e2] bg-[#f7f9f8] px-4 py-3 text-xs leading-5 text-[#52645d]">{message || errorMessage}</div>}
       </section>
     </main>
   );
