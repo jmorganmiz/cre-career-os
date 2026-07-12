@@ -52,3 +52,25 @@ create trigger set_automation_settings_updated_at before update on automation_se
 insert into automation_settings (user_id, enabled, monthly_limit_usd, run_reserve_usd)
 values ('00000000-0000-0000-0000-000000000001'::uuid, false, 35, 7)
 on conflict (user_id) do update set monthly_limit_usd = 35, run_reserve_usd = 7;
+
+create table if not exists automation_results (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default '00000000-0000-0000-0000-000000000001'::uuid,
+  job_type text not null,
+  run_id uuid references automation_runs(id) on delete set null,
+  title text not null,
+  summary text,
+  payload jsonb not null default '{}'::jsonb,
+  status text not null default 'new' check (status in ('new', 'saved', 'dismissed')),
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+
+alter table automation_results enable row level security;
+
+drop policy if exists "Users manage own automation results" on automation_results;
+
+create policy "Users manage own automation results" on automation_results for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create index if not exists automation_results_status_idx on automation_results(user_id, status, created_at desc);

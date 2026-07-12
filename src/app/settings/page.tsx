@@ -105,20 +105,20 @@ export default function SettingsPage() {
   const budgetPercent = automation ? Math.min(100, automation.budget.reserved / automation.budget.limit * 100) : 0;
 
   return <>
-    <PageHeader eyebrow="Workspace controls" title="Settings" description="Manage weekly automation, API budget, sync health, and workspace status." action="Refresh checks" onAction={refresh} />
+    <PageHeader eyebrow="Workspace controls" title="Settings" description="Manage daily automation, the review inbox, API budget, sync health, and workspace status." action="Refresh checks" onAction={refresh} />
 
     <section className="mb-6 border-y border-[#dfe6e2] bg-white px-5 py-6 md:px-6">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="flex items-start gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[#d9efe7] text-[#164c3a]"><CalendarClock size={20}/></span>
           <div>
-            <div className="flex flex-wrap items-center gap-2"><h2 className="text-base font-extrabold">Weekly opportunity automation</h2><Badge tone={automation?.settings.enabled ? "green" : "gray"}>{automation?.settings.enabled ? "Enabled" : "Paused"}</Badge></div>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-[#60706a]">Runs the Spring/Summer 2027 opportunity search once per week, removes roles already found, and saves new results to Opportunity Finder history.</p>
+            <div className="flex flex-wrap items-center gap-2"><h2 className="text-base font-extrabold">Daily opportunity automation</h2><Badge tone={automation?.settings.enabled ? "green" : "gray"}>{automation?.settings.enabled ? "Enabled" : "Paused"}</Badge></div>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-[#60706a]">Runs the 2027 opportunity search daily, removes roles already found, and sends new results to the Automation Inbox for review.</p>
           </div>
         </div>
         <label className="flex cursor-pointer items-center gap-3 text-xs font-extrabold text-[#33423c]">
           <input className="h-4 w-4 accent-[#164c3a]" type="checkbox" checked={Boolean(automation?.settings.enabled)} disabled={!automation || Boolean(actionLoading)} onChange={(event) => automationAction("setEnabled", event.target.checked)} />
-          {actionLoading === "toggle" ? "Saving..." : "Automate weekly"}
+          {actionLoading === "toggle" ? "Saving..." : "Automate daily"}
         </label>
       </div>
 
@@ -127,7 +127,7 @@ export default function SettingsPage() {
       <div className="mt-6 grid gap-0 border-y border-[#e4e9e6] md:grid-cols-3 md:divide-x md:divide-[#e4e9e6]">
         <div className="py-4 md:pr-5"><div className="flex items-center gap-2 text-xs font-bold text-[#718079]"><DollarSign size={14}/>Monthly hard limit</div><div className="mt-2 text-2xl font-extrabold">${automation?.budget.limit ?? 35}</div><div className="mt-1 text-[11px] text-[#718079]">Fixed server-side</div></div>
         <div className="border-t border-[#e4e9e6] py-4 md:border-t-0 md:px-5"><div className="flex items-center gap-2 text-xs font-bold text-[#718079]"><ShieldCheck size={14}/>Reserved this month</div><div className="mt-2 text-2xl font-extrabold">${automation?.budget.reserved.toFixed(2) ?? "0.00"}</div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e7ece9]"><div className="h-full rounded-full bg-[#54a57f]" style={{ width: `${budgetPercent}%` }}/></div></div>
-        <div className="border-t border-[#e4e9e6] py-4 md:border-t-0 md:pl-5"><div className="flex items-center gap-2 text-xs font-bold text-[#718079]"><Clock3 size={14}/>Schedule</div><div className="mt-2 text-sm font-extrabold">{automation?.schedule || "Mondays at 14:00 UTC"}</div><div className="mt-1 text-[11px] text-[#718079]">One run per calendar week</div></div>
+        <div className="border-t border-[#e4e9e6] py-4 md:border-t-0 md:pl-5"><div className="flex items-center gap-2 text-xs font-bold text-[#718079]"><Clock3 size={14}/>Schedule</div><div className="mt-2 text-sm font-extrabold">{automation?.schedule || "Daily at 14:00 UTC"}</div><div className="mt-1 text-[11px] text-[#718079]">One scheduled run per day</div></div>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-4">

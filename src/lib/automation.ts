@@ -7,13 +7,8 @@ import type { AutomationRun, AutomationSettings, OpportunityRun } from "@/lib/ty
 export const MONTHLY_LIMIT_USD = 35;
 export const RUN_RESERVE_USD = 7;
 
-function isoWeekKey(date = new Date()) {
-  const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const day = target.getUTCDay() || 7;
-  target.setUTCDate(target.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((target.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${target.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+function isoDateKey(date = new Date()) {
+  return date.toISOString().slice(0, 10);
 }
 
 function monthStart(date = new Date()) {
@@ -102,8 +97,8 @@ export async function getAutomationSnapshot() {
       estimated: Number(estimatedThisMonth.toFixed(4)),
       remaining: Math.max(0, Number((MONTHLY_LIMIT_USD - reservedThisMonth).toFixed(2))),
     },
-    schedule: "Mondays at 14:00 UTC (8/9 AM Central)",
-    currentRunKey: isoWeekKey(),
+    schedule: "Daily at 14:00 UTC (8/9 AM Central)",
+    currentRunKey: isoDateKey(),
   };
 }
 
@@ -128,7 +123,7 @@ export async function executeWeeklyAutomation(manual = false) {
   const settings = await ensureSettings();
   if (!settings.enabled && !manual) return { status: "disabled" as const };
 
-  const runKey = manual ? `${isoWeekKey()}-manual-${Date.now()}` : isoWeekKey();
+  const runKey = manual ? `${isoDateKey()}-manual-${Date.now()}` : isoDateKey();
   if (!manual) {
     const { data: existing, error: existingError } = await admin.from("automation_runs").select("*").eq("user_id", ownerId).eq("run_key", runKey).maybeSingle();
     if (existingError) throw existingError;
@@ -175,10 +170,24 @@ export async function executeWeeklyAutomation(manual = false) {
 
     const { error: saveError } = await admin.from("opportunity_runs").insert({
       user_id: ownerId,
-      input: { ...defaultOpportunityCriteria, automation: manual ? "manual" : "weekly" },
+      input: { ...defaultOpportunityCriteria, automation: manual ? "manual" : "daily" },
       output: brief,
     });
     if (saveError) throw saveError;
+
+    if (opportunities.length) {
+      const inboxRows = opportunities.map((opportunity) => ({
+        user_id: ownerId,
+        job_type: "daily_opportunities",
+        run_id: run.id,
+        title: `${opportunity.firm_name || "Unknown firm"} - ${opportunity.role_title || "Opportunity"}`,
+        summary: `Fit ${opportunity.fit_score ?? "-"} | Timing ${opportunity.timing_score ?? "-"} | ${opportunity.opportunity_type || "Role"}`,
+        payload: opportunity,
+        status: "new",
+      }));
+      const { error: inboxError } = await admin.from("automation_results").insert(inboxRows);
+      if (inboxError) throw inboxError;
+    }
 
     const estimatedCost = estimateCost(result.usage);
     const completedAt = new Date().toISOString();
