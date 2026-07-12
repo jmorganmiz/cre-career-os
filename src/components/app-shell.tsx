@@ -26,10 +26,12 @@ const nav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { live, syncStatus, notice, clearNotice } = useCareerData();
+  const { live, syncStatus, notice, clearNotice, signOut } = useCareerData();
+  const [accountOpen, setAccountOpen] = useState(false);
+  if (pathname === "/login" || pathname.startsWith("/auth/callback")) return <>{children}</>;
+
   const syncActive = live || syncStatus === "active";
   const syncChecking = syncStatus === "checking";
-  const [accountOpen, setAccountOpen] = useState(false);
 
   return (
     <div className="min-h-screen">
@@ -76,8 +78,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="rounded-xl bg-[#f7f9f8] p-4 text-xs leading-5 text-[#60706a]">
-            Browser login is turned off for this single-user build. The server owns the Supabase connection and writes records under one private owner id.
+            You are signed in with Supabase Auth. Server writes are scoped to your authenticated user id.
           </div>
+          <button className="btn-secondary w-full justify-center text-sm" onClick={signOut}>Log out</button>
         </div>
       </RecordModal>}
     </div>

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAuthenticatedUser } from "@/lib/auth";
 import { careerProfilePrompt } from "@/lib/career-profile";
 import { runOpenAIJsonAgent } from "@/lib/openai-agent";
 
@@ -35,6 +36,9 @@ function fallbackWithAgentError(firm: string, status: number, detail: string) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuthenticatedUser();
+  if (auth.response) return auth.response;
+
   const input = await request.json();
   const firm = String(input.firm_name || "This firm");
   if (!process.env.OPENAI_API_KEY) return NextResponse.json(fallback(firm));

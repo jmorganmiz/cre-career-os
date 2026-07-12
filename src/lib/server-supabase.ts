@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const ownerId = process.env.APP_USER_ID || "00000000-0000-0000-0000-000000000001";
+export const LEGACY_OWNER_ID = "00000000-0000-0000-0000-000000000001";
 
 function normalizeSecret(value?: string) {
   return value?.trim().replace(/^['"]|['"]$/g, "");

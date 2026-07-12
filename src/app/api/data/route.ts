@@ -1,5 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { requireAuthenticatedUser } from "@/lib/auth";
+import { getServerSupabase } from "@/lib/server-supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -12,32 +13,6 @@ type SupabaseError = {
   code?: string;
 };
 
-const ownerId = process.env.APP_USER_ID || "00000000-0000-0000-0000-000000000001";
-function normalizeSecret(value?: string) {
-  return value?.trim().replace(/^['"]|['"]$/g, "");
-}
-
-function normalizeSupabaseUrl(value?: string) {
-  const cleaned = normalizeSecret(value);
-  if (!cleaned) return undefined;
-  try {
-    const url = new URL(cleaned);
-    const dashboardMatch = url.pathname.match(/\/project\/([^/]+)/);
-    if (url.hostname === "supabase.com" && dashboardMatch?.[1]) {
-      return `https://${dashboardMatch[1]}.supabase.co`;
-    }
-    if (url.hostname.endsWith(".supabase.co")) {
-      return url.origin;
-    }
-  } catch {
-    return cleaned;
-  }
-  return cleaned;
-}
-
-const supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL);
-const serviceKey = normalizeSecret(process.env.SUPABASE_SERVICE_ROLE_KEY);
-const admin = supabaseUrl && serviceKey ? createClient(supabaseUrl, serviceKey) : null;
 const optionalUuidFields = new Set(["firm_id", "referral_contact_id"]);
 const optionalDateFields = new Set(["date_applied", "follow_up_at", "last_contacted_at"]);
 
@@ -58,6 +33,7 @@ function cleanRecord(record: Record<string, unknown>) {
   const cleaned: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(record)) {
     if (key === "id" && !value) continue;
+    if (key === "user_id") continue;
     if ((optionalUuidFields.has(key) || optionalDateFields.has(key)) && value === "") {
       cleaned[key] = null;
       continue;
@@ -100,15 +76,16 @@ function isGenericCareersUrl(value: unknown) {
   }
 }
 
-async function findExisting(resource: Resource, value: Record<string, unknown>) {
-  if (!admin) return null;
+type AdminClient = NonNullable<ReturnType<typeof getServerSupabase>>;
+
+async function findExisting(admin: AdminClient, userId: string, resource: Resource, value: Record<string, unknown>) {
   if (resource === "firms") {
-    const { data, error } = await admin.from("firms").select("*").eq("user_id", ownerId);
+    const { data, error } = await admin.from("firms").select("*").eq("user_id", userId);
     if (error) throw error;
     return data?.find((firm) => normalizedText(firm.name) === normalizedText(value.name)) || null;
   }
   if (resource === "applications") {
-    const { data, error } = await admin.from("applications").select("*").eq("user_id", ownerId);
+    const { data, error } = await admin.from("applications").select("*").eq("user_id", userId);
     if (error) throw error;
     const incomingUrl = normalizedUrl(value.job_url);
     const incomingRole = normalizedText(value.role_title);
@@ -122,15 +99,14 @@ async function findExisting(resource: Resource, value: Record<string, unknown>) 
   return null;
 }
 
-async function loadData() {
-  if (!admin) return null;
+async function loadData(admin: AdminClient, userId: string) {
   const [firms, contacts, applications, opportunityRuns, researchRuns, activityLog] = await Promise.all([
-    admin.from("firms").select("*").eq("user_id", ownerId).order("created_at", { ascending: false }),
-    admin.from("contacts").select("*").eq("user_id", ownerId).order("created_at", { ascending: false }),
-    admin.from("applications").select("*").eq("user_id", ownerId).order("created_at", { ascending: false }),
-    admin.from("opportunity_runs").select("*").eq("user_id", ownerId).order("created_at", { ascending: false }).limit(12),
-    admin.from("research_runs").select("*").eq("user_id", ownerId).order("created_at", { ascending: false }).limit(12),
-    admin.from("activity_log").select("*").eq("user_id", ownerId).order("completed_at", { ascending: false }).limit(100),
+    admin.from("firms").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+    admin.from("contacts").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+    admin.from("applications").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+    admin.from("opportunity_runs").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(12),
+    admin.from("research_runs").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(12),
+    admin.from("activity_log").select("*").eq("user_id", userId).order("completed_at", { ascending: false }).limit(100),
   ]);
 
   const error = firms.error || contacts.error || applications.error || opportunityRuns.error || researchRuns.error || activityLog.error;
@@ -148,9 +124,13 @@ async function loadData() {
 }
 
 export async function GET() {
+  const auth = await requireAuthenticatedUser();
+  if (auth.response) return auth.response;
+
+  const admin = getServerSupabase();
   if (!admin) return unavailable();
   try {
-    return NextResponse.json(await loadData());
+    return NextResponse.json(await loadData(admin, auth.user.id));
   } catch (error) {
     console.error("Data sync load failed", error);
     return NextResponse.json({ configured: true, error: errorMessage(error, "Could not load data.") }, { status: 500 });
@@ -158,56 +138,61 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireAuthenticatedUser();
+  if (auth.response) return auth.response;
+
+  const admin = getServerSupabase();
   if (!admin) return unavailable();
   const body = await request.json();
+  const userId = auth.user.id;
 
   try {
     if (body.action === "add") {
       const resource = body.resource as Resource;
       const value = cleanRecord(body.value);
-      const existing = await findExisting(resource, value);
+      const existing = await findExisting(admin, userId, resource, value);
       if (existing) return NextResponse.json({ data: existing, duplicate: true });
-      const { data, error } = await admin.from(resource).insert({ ...value, user_id: ownerId }).select().single();
+      const { data, error } = await admin.from(resource).insert({ ...value, user_id: userId }).select().single();
       if (error) throw error;
       return NextResponse.json({ data, duplicate: false });
     }
 
     if (body.action === "update") {
       const resource = body.resource as Resource;
-      const { data, error } = await admin.from(resource).update(cleanRecord(body.value)).eq("id", body.id).eq("user_id", ownerId).select().single();
+      const { data, error } = await admin.from(resource).update(cleanRecord(body.value)).eq("id", body.id).eq("user_id", userId).select().single();
       if (error) throw error;
       return NextResponse.json({ data });
     }
 
     if (body.action === "remove") {
       const resource = body.resource as Resource;
-      const { error } = await admin.from(resource).delete().eq("id", body.id).eq("user_id", ownerId);
+      const { error } = await admin.from(resource).delete().eq("id", body.id).eq("user_id", userId);
       if (error) throw error;
       return NextResponse.json({ ok: true });
     }
 
     if (body.action === "importMany") {
       const resource = body.resource as Resource;
-      const items = body.items.map((item: Record<string, unknown>) => ({ ...cleanRecord(item), user_id: ownerId }));
+      const items = body.items.map((item: Record<string, unknown>) => ({ ...cleanRecord(item), user_id: userId }));
       const { data, error } = await admin.from(resource).insert(items).select();
       if (error) throw error;
       return NextResponse.json({ data });
     }
 
     if (body.action === "opportunityRun") {
-      const { data, error } = await admin.from("opportunity_runs").insert({ input: body.input, output: body.output, user_id: ownerId }).select().single();
+      const { data, error } = await admin.from("opportunity_runs").insert({ input: body.input, output: body.output, user_id: userId }).select().single();
       if (error) throw error;
       return NextResponse.json({ data });
     }
 
     if (body.action === "researchRun") {
-      const { data, error } = await admin.from("research_runs").insert({ input: body.input, output: body.output, firm_id: body.firmId || null, user_id: ownerId }).select().single();
+      const { data, error } = await admin.from("research_runs").insert({ input: body.input, output: body.output, firm_id: body.firmId || null, user_id: userId }).select().single();
       if (error) throw error;
       return NextResponse.json({ data });
     }
 
     if (body.action === "completeAction") {
-      const { error } = await admin.from("activity_log").upsert({ ...cleanRecord(body.activity), user_id: ownerId }, { onConflict: "user_id,action_id" });
+      const { error } = await admin.from("activity_log").upsert({ ...cleanRecord(body.activity), user_id: userId }, { onConflict: "user_id,action_id" });
       if (error) throw error;
       return NextResponse.json({ ok: true });
     }
