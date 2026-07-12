@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requirePrivateDeployment } from "@/lib/private-deployment";
 
 export const dynamic = "force-dynamic";
 
@@ -21,12 +22,17 @@ function normalizeSupabaseUrl(value?: string) {
 }
 
 export function GET() {
-  const supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const privateDeployment = requirePrivateDeployment();
+  if (privateDeployment) return privateDeployment;
+  const supabaseUrl = normalizeSupabaseUrl(process.env.SUPABASE_URL);
   const serviceKey = normalizeSecret(process.env.SUPABASE_SERVICE_ROLE_KEY);
   const openaiKey = normalizeSecret(process.env.OPENAI_API_KEY);
+  const ownerId = normalizeSecret(process.env.CAREEROS_OWNER_ID);
+  const privateAck = normalizeSecret(process.env.CAREEROS_PRIVATE_DEPLOYMENT_ACK)?.toLowerCase() === "true";
   return NextResponse.json({
     ok: true,
     supabase: { configured: Boolean(supabaseUrl && serviceKey), urlHost: supabaseUrl ? new URL(supabaseUrl).hostname : null },
     openai: { configured: Boolean(openaiKey), model: process.env.OPENAI_MODEL || "gpt-4.1-mini" },
+    privateDeployment: { acknowledged: privateAck, ownerConfigured: Boolean(ownerId), ownerSuffix: ownerId ? ownerId.slice(-6) : null },
   });
 }

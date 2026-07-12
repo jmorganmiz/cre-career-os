@@ -26,9 +26,8 @@ const nav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { live, syncStatus, notice, clearNotice, signOut } = useCareerData();
+  const { live, syncStatus, notice, clearNotice } = useCareerData();
   const [accountOpen, setAccountOpen] = useState(false);
-  if (pathname === "/login" || pathname.startsWith("/auth/callback")) return <>{children}</>;
 
   const syncActive = live || syncStatus === "active";
   const syncChecking = syncStatus === "checking";
@@ -73,24 +72,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${syncActive ? "bg-[#d9efe7] text-[#164c3a]" : "bg-[#f8e7c7] text-[#8a6120]"}`}>{syncActive ? <Database size={17}/> : <AlertTriangle size={17}/>}</span>
               <div>
                 <div className="text-sm font-extrabold">{syncActive ? "Supabase sync is active" : syncChecking ? "Checking Supabase sync" : "Supabase sync issue"}</div>
-                <p className="mt-2 text-xs leading-5 text-[#60706a]">{syncActive ? "Every change saves through the server to your Supabase project. No sign-in is required." : syncChecking ? "The browser is confirming the server connection. This should switch to active in a moment." : "The live API is configured, but this browser request did not finish. Hard refresh the page and try again."}</p>
+                <p className="mt-2 text-xs leading-5 text-[#60706a]">{syncActive ? "Every change saves through the server to your Supabase project under the configured private owner id." : syncChecking ? "The browser is confirming the server connection. This should switch to active in a moment." : "The live API is configured, but this browser request did not finish. Hard refresh the page and try again."}</p>
               </div>
             </div>
           </div>
           <div className="rounded-xl bg-[#f7f9f8] p-4 text-xs leading-5 text-[#60706a]">
-            You are signed in with Supabase Auth. Server writes are scoped to your authenticated user id.
+            Access is controlled by Vercel Deployment Protection. Server reads and writes are scoped to CAREEROS_OWNER_ID.
           </div>
-          <button className="btn-secondary w-full justify-center text-sm" onClick={signOut}>Log out</button>
         </div>
       </RecordModal>}
     </div>
   );
 }
-
-
-
-
-
-
-
-

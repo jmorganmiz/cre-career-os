@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth";
-import { getServerSupabase } from "@/lib/server-supabase";
+import { requirePrivateDeployment, ownerConfigError } from "@/lib/private-deployment";
+import { getOwnerId, getServerSupabase } from "@/lib/server-supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -124,13 +124,20 @@ async function loadData(admin: AdminClient, userId: string) {
 }
 
 export async function GET() {
-  const auth = await requireAuthenticatedUser();
-  if (auth.response) return auth.response;
+  const privateDeployment = requirePrivateDeployment();
+  if (privateDeployment) return privateDeployment;
+
+  let userId: string;
+  try {
+    userId = getOwnerId();
+  } catch (error) {
+    return ownerConfigError(error);
+  }
 
   const admin = getServerSupabase();
   if (!admin) return unavailable();
   try {
-    return NextResponse.json(await loadData(admin, auth.user.id));
+    return NextResponse.json(await loadData(admin, userId));
   } catch (error) {
     console.error("Data sync load failed", error);
     return NextResponse.json({ configured: true, error: errorMessage(error, "Could not load data.") }, { status: 500 });
@@ -138,13 +145,19 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireAuthenticatedUser();
-  if (auth.response) return auth.response;
+  const privateDeployment = requirePrivateDeployment();
+  if (privateDeployment) return privateDeployment;
+
+  let userId: string;
+  try {
+    userId = getOwnerId();
+  } catch (error) {
+    return ownerConfigError(error);
+  }
 
   const admin = getServerSupabase();
   if (!admin) return unavailable();
   const body = await request.json();
-  const userId = auth.user.id;
 
   try {
     if (body.action === "add") {
@@ -203,5 +216,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: errorMessage(error, "Data action failed.") }, { status: 500 });
   }
 }
-
-

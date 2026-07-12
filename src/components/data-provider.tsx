@@ -1,15 +1,13 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
 import type { ActivityLog, Application, Contact, Firm, Notice, OpportunityRun, ResearchRun } from "@/lib/types";
 
 type Resource = "firms" | "contacts" | "applications";
 type RecordMap = { firms: Firm; contacts: Contact; applications: Application };
 type SyncStatus = "checking" | "active" | "error";
 type DataContextValue = {
-  firms: Firm[]; contacts: Contact[]; applications: Application[]; opportunityRuns: OpportunityRun[]; researchRuns: ResearchRun[]; activityLog: ActivityLog[]; user: User | null; live: boolean; syncStatus: SyncStatus; notice: Notice | null;
+  firms: Firm[]; contacts: Contact[]; applications: Application[]; opportunityRuns: OpportunityRun[]; researchRuns: ResearchRun[]; activityLog: ActivityLog[]; user: null; live: boolean; syncStatus: SyncStatus; notice: Notice | null;
   add: <K extends Resource>(resource: K, value: RecordMap[K]) => Promise<RecordMap[K]>;
   update: <K extends Resource>(resource: K, id: string, value: Partial<RecordMap[K]>) => Promise<RecordMap[K]>;
   remove: (resource: Resource, id?: string) => Promise<void>;
@@ -41,18 +39,12 @@ const DataContext = createContext<DataContextValue | null>(null);
 
 async function postData(body: Record<string, unknown>) {
   const response = await fetch("/api/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  if (response.status === 401) {
-    window.location.assign("/login");
-    throw new Error("Sign in required.");
-  }
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || "Data sync failed.");
   return data;
 }
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const authPage = pathname === "/login" || pathname.startsWith("/auth/callback");
   const [firms, setFirms] = useState<Firm[]>(demoFirms);
   const [contacts, setContacts] = useState<Contact[]>(demoContacts);
   const [applications, setApplications] = useState<Application[]>(demoApplications);
@@ -69,13 +61,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (authPage) return;
-
     fetch("/api/data", { cache: "no-store" }).then(async (response) => {
-      if (response.status === 401) {
-        window.location.assign("/login");
-        throw new Error("Sign in required.");
-      }
       const data = await response.json();
       if (!response.ok || !data.configured) throw new Error(data.error || "Automatic Supabase sync is not configured.");
       setFirms(data.firms || []);
@@ -91,7 +77,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setSyncStatus("error");
       showNotice(`${error.message} Using demo/local data.`, "error");
     });
-  }, [authPage]);
+  }, []);
 
   const add: DataContextValue["add"] = async (resource, value) => {
     try {
@@ -187,13 +173,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     catch (error) { showNotice(error instanceof Error ? error.message : "Action completion saved locally only.", "error"); }
   };
 
-  const authDisabled = async () => "Use the private sign-in page to authenticate.";
-  const signOut = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.assign("/login");
-  };
+  const authDisabled = async () => "Access is controlled by Vercel Deployment Protection.";
+  const signOut = async () => undefined;
 
-  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, researchRuns, activityLog, user: null, live: authPage ? false : live, syncStatus: authPage ? "checking" : syncStatus, notice, add, update, remove, importMany, addOpportunityRun, addResearchRun, completeAction, clearNotice: () => setNotice(null), signIn: authDisabled, signUp: authDisabled, signOut }}>{children}</DataContext.Provider>;
+  return <DataContext.Provider value={{ firms, contacts, applications, opportunityRuns, researchRuns, activityLog, user: null, live, syncStatus, notice, add, update, remove, importMany, addOpportunityRun, addResearchRun, completeAction, clearNotice: () => setNotice(null), signIn: authDisabled, signUp: authDisabled, signOut }}>{children}</DataContext.Provider>;
 }
 
 export const useCareerData = () => {
@@ -201,4 +184,3 @@ export const useCareerData = () => {
   if (!value) throw new Error("useCareerData must be used inside DataProvider");
   return value;
 };
-

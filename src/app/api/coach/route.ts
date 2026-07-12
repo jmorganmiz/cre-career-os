@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth";
+import { requirePrivateDeployment } from "@/lib/private-deployment";
 import { careerProfilePrompt } from "@/lib/career-profile";
 import { runOpenAIJsonAgent } from "@/lib/openai-agent";
 
@@ -35,8 +35,8 @@ const fallback = (input: CoachInput): CoachResponse => ({
 });
 
 export async function POST(request: Request) {
-  const auth = await requireAuthenticatedUser();
-  if (auth.response) return auth.response;
+  const privateDeployment = requirePrivateDeployment();
+  if (privateDeployment) return privateDeployment;
 
   const input = await request.json() as CoachInput;
   if (!process.env.OPENAI_API_KEY) return NextResponse.json({ ...fallback(input), demo: true });

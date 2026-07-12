@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth";
+import { requirePrivateDeployment } from "@/lib/private-deployment";
 import { careerProfilePrompt } from "@/lib/career-profile";
 import { runOpenAIJsonAgent } from "@/lib/openai-agent";
 
@@ -36,8 +36,8 @@ function fallbackWithAgentError(firm: string, status: number, detail: string) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireAuthenticatedUser();
-  if (auth.response) return auth.response;
+  const privateDeployment = requirePrivateDeployment();
+  if (privateDeployment) return privateDeployment;
 
   const input = await request.json();
   const firm = String(input.firm_name || "This firm");
